@@ -16,49 +16,51 @@
 
 # Community-enhanced Symbolica 
 
-This repository contains a community-enhanced [Symbolica](https://github.com/benruijl/symbolica) library. It adds extra functionality to existing Symbolica types and defines new ones.
+This repository contains the [Symbolica](https://github.com/benruijl/symbolica) library, bundled with additional community contributions.
 
 Currently, `symbolica-community` integrates with the following two packages:
-- [spenso](https://github.com/alphal00p/spenso): perform tensor network computations (see [example](https://github.com/benruijl/symbolica-community/blob/main/python/symbolica_community/examples/physics/tensors.py)) 
-- [vakint](https://github.com/alphal00p/vakint): compute massive vacuum bubbles (see [example](https://github.com/benruijl/symbolica-community/blob/main/python/symbolica_community/examples/physics/vakint.py))
+- [spenso](https://github.com/alphal00p/spenso): perform tensor network computations
+- [vakint](https://github.com/alphal00p/vakint): compute massive vacuum bubbles
 
 
 ## Usage
 
-The community-enhanced version can easily be installed next to a regular Symbolica installation. Make sure to either use the community version or the regular version in your project, as they are incompatible.
+To use core Symbolica features, simply write:
+```python
+from symbolica import *
+```
+See the [documentation](https://symbolica.io/docs) for further help.
 
-## Python
+To use extensions, for example `vakint`, write 
+
+```python
+import symbolica.community.vakint import *
+````
+
+#### Installation 
 
 This package can be installed for Python >3.5 using `pip`:
 
 ```sh
-pip install symbolica-community
+pip install symbolica
 ```
 
 or can be manually built using `maturin`:
 
 ```bash
+cargo run --features "python_stubgen" # generate type hints
 maturin build --release
 ```
 
-### Rust
 
-If you want to use Symbolica as a library in Rust, simply include it in the `Cargo.toml`:
+## For developers
 
-```toml
-[dependencies]
-symbolica_community = { git = "https://github.com/benruijl/symbolica_community.git" }
-```
+If you are developing a Python package that uses Symbolica, your users can simply `import symbolica`.
+If you are developing a Rust crate, your crate can be added to `symbolica-community`, which allows you to write Python functions that use Symbolica classes and types, while sharing the same state/engine as the other included packages. The process is straightforward:
 
-
-## Contributing
-
-Users can easily contribute Python or Rust code that extends Symbolica's functionality via Pull Requests. All code in this repository is MIT licensed.
-
-Pure Python contributions should go in the `python/symbolica_community/[category]` folder, where the `category` is for example `physics`, `chemisty`, etc. All code must be fully typed.
-
-Rust contributions go in `src/[category]/myfeature.rs` and potential Python bindings need to be registered in `src/[category].rs`
-
-## Forward compatibility
-
-All code accepted into the repository will continuously be upgraded to the latest stable version of Symbolica by Ruijl Research (potentially in combination with other contributors).
+- Make sure your crate has a struct called `CommunityModule` that implements `SymbolicaCommunityModule`
+- Add your crate `example` to `Cargo.toml`:
+  - Extend the feature list: `python_stubgen = ["symbolica/python_stubgen", "example/python_stubgen"]`
+  - Extend the dependencies: `example = { git = "..." }`
+- Register your crate as a submodule in `lib.rs` by extending the `core` function:
+  - `register_extension::<example::CommunityModule>(m)?;`

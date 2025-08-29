@@ -1,7 +1,7 @@
 [package]
 authors = ["Ben Ruijl <benruyl@gmail.com>"]
 categories = ["science"]
-description = "A blazing fast computer algebra system with community enhancements"
+description = "A blazing fast computer algebra system, with community extensions"
 edition = "2021"
 keywords = ["algebra", "symbolic", "manipulation", "mathematics", "physics"]
 license = "MIT"
@@ -9,39 +9,25 @@ name = "symbolica"
 readme = "Readme.md"
 repository = "https://github.com/benruijl/symbolica-community"
 rust-version = "1.73"
-version = "0.1.0"
-
-[features]
-default = ["vakint", "spenso"]
-
-vakint = ["dep:vakint"]
-spenso = ["dep:spenso"]
-[profile.release]
-codegen-units = 1
-lto = true
-
-[profile.dev-optim]
-inherits = "dev"
-opt-level = 3
+version = "0.18.0"
 
 [[bin]]
 name = "stub_gen"
-doc = false
+required-features = ["python_stubgen"]
 
 [lib]
 name = "symbolica_community"
-crate-type = ["lib", "cdylib"]
+crate-type = ["rlib", "cdylib"]
+
+[features]
+python_stubgen = ["symbolica/python_stubgen", "example/python_stubgen"]
 
 [dependencies]
-symbolica = { version = "0.13.0", features = ["python_no_module"] }
-pyo3 = { version = "0.22.0", features = ["abi3-py37", "anyhow", "num-complex"] }
+symbolica = { version = "0.18", features = ["python_export"] }
+pyo3 = "0.25"
+pyo3-stub-gen = { version = "0.13", default-features = false }
+example = { path = "example" }
 
-anyhow = "*"
-vakint = { git = "https://github.com/alphal00p/vakint", branch = "main", optional = true }
-spenso = { version = "0.4.1", optional = true, features = ["shadowing"] }
-itertools = "0.13.0"
-delegate = "0.13.1"
-auto_enums = "0.8.6"
-thiserror = "1.0.65"
-pyo3-stub-gen = "0.6.0"
-env_logger = "0.11.5"
+[patch.crates-io]
+symbolica = { git = "https://github.com/benruijl/symbolica", branch = "modules" }
+pyo3-stub-gen = { git = "https://github.com/benruijl/pyo3-stub-gen", branch = "patched" }

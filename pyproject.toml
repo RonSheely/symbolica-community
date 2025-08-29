@@ -4,18 +4,14 @@ build-backend = "maturin"
 
 [project]
 authors = [
-    { email = "benruyl@gmail.com" },
-    { name = "Ben Ruijl" },
-    { email = "mail@lucien.ch" },
-    { name = "Lucien Huber" },
-    { email = "valentin.hirschi@gmail.com" },
-    { name = "Valentin Hischi" },
+    { name = "Ben Ruijl", email = "benruyl@gmail.com" },
+    { name = "Lucien Huber", email = "mail@lucien.ch" },
+    { name = "Valentin Hirschi", email = "valentin.hirschi@gmail.com" },
 ]
 name = "symbolica-community"
-summary = "Community-enhanced version of Symbolica: a blazing fast computer algebra system"
 description = "Community-enhanced version of Symbolica: a blazing fast computer algebra system"
 keywords = ["math", "algebra", "polynomial", "expression", "manipulation"]
-version = "0.1.0"
+version = "0.18.0"
 readme = "Readme.md"
 requires-python = ">=3.7"
 classifiers = [
@@ -23,12 +19,14 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dynamic = ["version"]
-[project.optional-dependencies]
-tests = ["pytest"]
+
 [tool.maturin]
-python-source = "python"
 features = ["pyo3/extension-module"]
+module-name = "symbolica.core"
+python-source = "python"
 
 [tool.poetry]
 package-mode = false
+
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" }, { file = "src/*.rs" }]
