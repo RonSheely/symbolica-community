@@ -12,7 +12,7 @@ name = "symbolica"
 description = "Community-enhanced version of Symbolica: a blazing fast computer algebra system"
 keywords = ["math", "algebra", "polynomial", "expression", "manipulation"]
 version = "0.18.0"
-readme = "Readme.md"
+readme = "Readme_pypi.md"
 requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Rust",
