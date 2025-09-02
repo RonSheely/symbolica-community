@@ -35,8 +35,9 @@ pyo3-stub-gen = { version = "0.13", default-features = false }
 spynso3 = { git = "https://github.com/alphal00p/spenso", package = "spynso3", rev = "66843203a8eb3ef473d91d31fc37ad8c43ea9f20" }
 vakint = { git = "https://github.com/alphal00p/vakint", rev = "5877366f652a397924fd5b6d77ef690941ac2881", features = [
     "symbolica_community_module",
-    "python_stubgen",
 ] }
+
+gmp-mpfr-sys = { version = "=1.6.5" } # work around long long patch issue
 
 [patch.crates-io]
 
