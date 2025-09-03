@@ -698,12 +698,11 @@ checksum = "07e28edb80900c19c28f1072f2e8aeca7fa06b23cd4169cefe1af5aa3260783f"
 
 [[package]]
 name = "gmp-mpfr-sys"
-version = "1.6.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c66d61197a68f6323b9afa616cf83d55d69191e1bf364d4eb7d35ae18defe776"
+version = "1.6.7"
+source = "git+https://gitlab.com/benruijl/gmp-mpfr-sys#fe062a3066618bbb2a92ea3f79adc741d9ec1f3f"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -1981,7 +1980,6 @@ dependencies = [
 name = "symbolica_community"
 version = "0.18.0"
 dependencies = [
- "gmp-mpfr-sys",
  "idenso",
  "pyo3",
  "pyo3-build-config 0.26.0",
