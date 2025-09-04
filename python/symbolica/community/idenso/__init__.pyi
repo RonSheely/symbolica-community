@@ -3,9 +3,7 @@
 
 import builtins
 import symbolica.core
-
-from symbolica.core import *
-
+from symbolica.core import Expression
 
 def conj(self_: Expression) -> Expression:
     r"""
@@ -62,7 +60,6 @@ def conj(self_: Expression) -> Expression:
     ```
     """
 
-
 def cook_function(self_: Expression) -> Expression:
     r"""
     Convert a single function call into a flattened variable symbol.
@@ -107,7 +104,6 @@ def cook_function(self_: Expression) -> Expression:
     ```
     """
 
-
 def cook_indices(self_: Expression) -> Expression:
     r"""
     Convert complex nested index structures into flattened symbolic names.
@@ -151,7 +147,6 @@ def cook_indices(self_: Expression) -> Expression:
     ```
     """
 
-
 def expand_bis(self_: Expression) -> Expression:
     r"""
     Expands factorized terms containing Dirac bispinor indices.
@@ -173,7 +168,6 @@ def expand_bis(self_: Expression) -> Expression:
     # Returns:
         Expanded expression with factorizations unfolded
     """
-
 
 def expand_color(self_: Expression) -> Expression:
     r"""
@@ -202,7 +196,6 @@ def expand_color(self_: Expression) -> Expression:
         Expanded expression with factorizations unfolded
     """
 
-
 def expand_metrics(self_: Expression) -> Expression:
     r"""
     Expands factorized terms containing metric tensors.
@@ -216,7 +209,6 @@ def expand_metrics(self_: Expression) -> Expression:
     # Returns:
         Expression: The expanded expression with metric factorizations unfolded
     """
-
 
 def expand_mink(self_: Expression) -> Expression:
     r"""
@@ -264,7 +256,6 @@ def expand_mink(self_: Expression) -> Expression:
     ```
     """
 
-
 def expand_mink_bis(self_: Expression) -> Expression:
     r"""
     Expands factorized terms containing both Minkowski and bispinor indices.
@@ -279,7 +270,6 @@ def expand_mink_bis(self_: Expression) -> Expression:
     # Returns:
         Expanded expression with all factorizations unfolded
     """
-
 
 def list_dangling(self_: Expression) -> builtins.list[Expression]:
     r"""
@@ -321,7 +311,6 @@ def list_dangling(self_: Expression) -> builtins.list[Expression]:
     ```
     """
 
-
 def simplify_color(self_: Expression) -> Expression:
     r"""
     Applies SU(N) color algebra rules to simplify color group structures.
@@ -355,7 +344,6 @@ def simplify_color(self_: Expression) -> Expression:
         If explicit color indices remain after simplification, it indicates the
         expression could not be fully reduced to color-scalar form.
     """
-
 
 def simplify_gamma(self_: Expression) -> Expression:
     r"""
@@ -391,7 +379,6 @@ def simplify_gamma(self_: Expression) -> Expression:
     print(simplify_gamma(gamma_structure(7, 3, 4) * gamma_structure(3, 7, 4)))
     ```
     """
-
 
 def simplify_metrics(self_: Expression) -> Expression:
     r"""
@@ -431,7 +418,6 @@ def simplify_metrics(self_: Expression) -> Expression:
     ```
     """
 
-
 def to_dots(self_: Expression) -> Expression:
     r"""
     Converts contracted Lorentz/Minkowski indices into dot product notation.
@@ -465,7 +451,6 @@ def to_dots(self_: Expression) -> Expression:
     print(to_dots( p(mu)*q(mu)))
     ```
     """
-
 
 def wrap_dummies(self_: Expression, header: Expression) -> Expression:
     r"""
@@ -506,7 +491,6 @@ def wrap_dummies(self_: Expression, header: Expression) -> Expression:
 
     ```
     """
-
 
 def wrap_indices(self_: Expression, header: Expression) -> Expression:
     r"""
