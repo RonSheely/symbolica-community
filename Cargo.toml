@@ -27,7 +27,7 @@ python_stubgen = [
     "spynso3/python_stubgen",
     "idenso/python_stubgen",
     "vakint/python_stubgen",
-    "example_extension/python_stubgen"
+    "example_extension/python_stubgen",
 ]
 
 [dependencies]
@@ -43,9 +43,9 @@ vakint = { git = "https://github.com/alphal00p/vakint", rev = "2bf65b038a756fcc8
 
 [patch.crates-io]
 spynso3 = { git = "https://github.com/alphal00p/spenso", rev = "08c56e08ff3429bd56b6c51c4e1f8b479d7552d5" }
-idenso= {git= "https://github.com/alphal00p/spenso", rev = "08c56e08ff3429bd56b6c51c4e1f8b479d7552d5" }
-spenso= {git= "https://github.com/alphal00p/spenso", rev = "08c56e08ff3429bd56b6c51c4e1f8b479d7552d5" }
-spenso-hep-lib = {git= "https://github.com/alphal00p/spenso", rev = "08c56e08ff3429bd56b6c51c4e1f8b479d7552d5" }
+idenso = { git = "https://github.com/alphal00p/spenso", rev = "08c56e08ff3429bd56b6c51c4e1f8b479d7552d5" }
+spenso = { git = "https://github.com/alphal00p/spenso", rev = "08c56e08ff3429bd56b6c51c4e1f8b479d7552d5" }
+spenso-hep-lib = { git = "https://github.com/alphal00p/spenso", rev = "08c56e08ff3429bd56b6c51c4e1f8b479d7552d5" }
 # vakint = {git }
 # spynso3 = { path = "../spenso/spynso3" }
 symbolica = { git = "https://github.com/benruijl/symbolica", branch = "modules" }
