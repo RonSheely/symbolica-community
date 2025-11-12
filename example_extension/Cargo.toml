@@ -11,7 +11,7 @@ crate-type = ["rlib", "cdylib"]
 [dependencies]
 symbolica = { version = "0.20", features = ["python_export"] }
 pyo3 = "0.27"
-pyo3-stub-gen = { version = "0.16", default-features = false }
+pyo3-stub-gen = { version = "0.16", optional = true, default-features = false }
 
 [features]
 python_stubgen = ["symbolica/python_stubgen"]
