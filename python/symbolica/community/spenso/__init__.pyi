@@ -3,10 +3,11 @@
 
 import builtins
 import decimal
+import enum
 import typing
 from symbolica.core import Condition, Expression, HeldExpression, PatternRestriction, Transformer
-from enum import Enum
 
+@typing.final
 class CompiledTensorEvaluator:
     r"""
     A compiled and optimized evaluator for maximum performance tensor evaluation.
@@ -28,7 +29,7 @@ class CompiledTensorEvaluator:
     >>> compiled = evaluator.compile("eval_func", "code.cpp", "lib")
     >>> results = compiled.evaluate_complex(large_input_batch)
     """
-    def evaluate_complex(self, inputs:typing.Sequence[typing.Sequence[builtins.complex]]) -> builtins.list[Tensor]:
+    def evaluate_complex(self, inputs: typing.Sequence[typing.Sequence[builtins.complex]]) -> builtins.list[Tensor]:
         r"""
         Evaluate the tensor expression for multiple complex-valued parameter inputs.
         
@@ -57,6 +58,7 @@ class CompiledTensorEvaluator:
         >>> results = compiled_evaluator.evaluate_complex(complex_inputs)
         """
 
+@typing.final
 class LibraryTensor:
     r"""
     A library tensor class optimized for use in tensor libraries and networks.
@@ -80,7 +82,7 @@ class LibraryTensor:
     >>> sparse_tensor = LibraryTensor.sparse(structure, float)
     """
     @typing.overload
-    def __getitem__(self, item:builtins.slice) -> builtins.list[Expression | builtins.complex | float]:
+    def __getitem__(self, item: builtins.slice) -> builtins.list[Expression | builtins.complex | float]:
         r"""
         Get library tensor elements at the specified range of indices.
         
@@ -95,7 +97,7 @@ class LibraryTensor:
             The tensor elements at the specified range
         """
     @typing.overload
-    def __getitem__(self, item:typing.Sequence[builtins.int] | builtins.int) -> Expression | builtins.complex | float:
+    def __getitem__(self, item: typing.Sequence[builtins.int] | builtins.int) -> Expression | builtins.complex | float:
         r"""
         Get library tensor element at the specified index or indices.
         
@@ -110,9 +112,9 @@ class LibraryTensor:
             The tensor element at the specified index
         """
     @typing.overload
-    def __getitem__(self, item:builtins.slice | builtins.int | builtins.list[builtins.int]) -> typing.Any: ...
+    def __getitem__(self, item: builtins.slice | builtins.int | builtins.list[builtins.int]) -> typing.Any: ...
     @typing.overload
-    def __setitem__(self, item:typing.Sequence[builtins.int] | builtins.int, value:Expression | builtins.complex | float) -> None:
+    def __setitem__(self, item: typing.Sequence[builtins.int] | builtins.int, value: Expression | builtins.complex | float) -> None:
         r"""
         Set library tensor element(s) at the specified index or indices.
         
@@ -133,7 +135,7 @@ class LibraryTensor:
         >>> tensor[1, 1] = 2.0
         """
     @typing.overload
-    def __setitem__(self, item:typing.Any, value:typing.Any) -> None:
+    def __setitem__(self, item: typing.Any, value: typing.Any) -> None:
         r"""
         Set library tensor element(s) at the specified index or indices.
         
@@ -155,7 +157,7 @@ class LibraryTensor:
         """
     def structure(self) -> TensorStructure: ...
     @staticmethod
-    def sparse(structure:TensorStructure | builtins.list[Representation] | builtins.list[builtins.int], type_info:type) -> LibraryTensor:
+    def sparse(structure: TensorStructure | builtins.list[Representation] | builtins.list[builtins.int], type_info: type) -> LibraryTensor:
         r"""
         Create a new sparse empty library tensor with the given structure and data type.
         
@@ -186,7 +188,7 @@ class LibraryTensor:
         >>> sparse_float[1, 1] = 2.0
         """
     @staticmethod
-    def dense(structure:TensorStructure | builtins.list[Representation] | builtins.list[builtins.int], data:typing.Sequence[Expression] | typing.Sequence[builtins.float] | typing.Sequence[builtins.complex]) -> LibraryTensor:
+    def dense(structure: TensorStructure | builtins.list[Representation] | builtins.list[builtins.int], data: typing.Sequence[Expression] | typing.Sequence[builtins.float] | typing.Sequence[builtins.complex]) -> LibraryTensor:
         r"""
         Create a new dense library tensor with the given structure and data.
         
@@ -308,6 +310,7 @@ class LibraryTensor:
         >>> value = scalar_tensor.scalar()
         """
 
+@typing.final
 class Representation:
     r"""
     A representation in the sense of group representation theory for tensor indices.
@@ -350,7 +353,7 @@ class Representation:
     ```
     """
     @typing.overload
-    def __call__(self, aind:builtins.int | Expression | str) -> Slot:
+    def __call__(self, aind: builtins.int | Expression | str) -> Slot:
         r"""
         Create a slot from this representation, by specifying an index.
         
@@ -374,7 +377,7 @@ class Representation:
         >>> slot3 = rep(sp.S('nu'))
         """
     @typing.overload
-    def __call__(self, aind:Expression) -> Expression | Slot:
+    def __call__(self, aind: Expression) -> Expression | Slot:
         r"""
         Create a slot or symbolic expression from this representation.
         
@@ -395,7 +398,7 @@ class Representation:
         >>> rep = Representation.euc(3)
         >>> expr = rep(sp.E("cos(x)"))
         """
-    def __new__(cls, name:builtins.str, dimension:builtins.int | Expression | str, is_self_dual:builtins.bool=True) -> Representation:
+    def __new__(cls, name: builtins.str, dimension: builtins.int | Expression | str, is_self_dual: builtins.bool = ...) -> Representation:
         r"""
         Create and register a new representation with specified properties.
         
@@ -420,7 +423,7 @@ class Representation:
         general = Representation("General", n, is_self_dual=True)
         ```
         """
-    def g(self, i:builtins.int | Expression | str, j:builtins.int | Expression | str) -> TensorIndices:
+    def g(self, i: builtins.int | Expression | str, j: builtins.int | Expression | str) -> TensorIndices:
         r"""
         Create a metric tensor for this representation.
         
@@ -434,7 +437,7 @@ class Representation:
         metric = rep.g('mu', 'nu')  # Minkowski metric g_μν
         ```
         """
-    def flat(self, i:builtins.int | Expression | str, j:builtins.int | Expression | str) -> TensorIndices:
+    def flat(self, i: builtins.int | Expression | str, j: builtins.int | Expression | str) -> TensorIndices:
         r"""
         Create a musical isomorphism tensor for this representation.
         
@@ -448,7 +451,7 @@ class Representation:
         flat = rep.flat('mu', 'nu')  # Flat isomorphism ♭_μν
         ```
         """
-    def id(self, i:builtins.int | Expression | str, j:builtins.int | Expression | str) -> TensorIndices:
+    def id(self, i: builtins.int | Expression | str, j: builtins.int | Expression | str) -> TensorIndices:
         r"""
         Create an identity tensor for this representation.
         
@@ -469,7 +472,7 @@ class Representation:
         Convert the representation to a symbolic expression.
         """
     @staticmethod
-    def bis(dimension:builtins.int | Expression | str) -> Representation:
+    def bis(dimension: builtins.int | Expression | str) -> Representation:
         r"""
         Create a bispinor representation.
         
@@ -477,7 +480,7 @@ class Representation:
         - dimension: The dimension of the bispinor space
         """
     @staticmethod
-    def euc(dimension:builtins.int | Expression | str) -> Representation:
+    def euc(dimension: builtins.int | Expression | str) -> Representation:
         r"""
         Create a Euclidean space representation.
         
@@ -485,7 +488,7 @@ class Representation:
         - dimension: The dimension of the Euclidean space
         """
     @staticmethod
-    def mink(dimension:builtins.int | Expression | str) -> Representation:
+    def mink(dimension: builtins.int | Expression | str) -> Representation:
         r"""
         Create a Minkowski space representation.
         
@@ -493,7 +496,7 @@ class Representation:
         - dimension: The dimension of the Minkowski space
         """
     @staticmethod
-    def cof(dimension:builtins.int | Expression | str) -> Representation:
+    def cof(dimension: builtins.int | Expression | str) -> Representation:
         r"""
         Create a color fundamental representation.
         
@@ -501,7 +504,7 @@ class Representation:
         - dimension: The dimension of the color group (e.g., 3 for SU(3))
         """
     @staticmethod
-    def coad(dimension:builtins.int | Expression | str) -> Representation:
+    def coad(dimension: builtins.int | Expression | str) -> Representation:
         r"""
         Create a color adjoint representation.
         
@@ -509,7 +512,7 @@ class Representation:
         - dimension: The dimension of the adjoint representation (e.g., 8 for SU(3))
         """
     @staticmethod
-    def cos(dimension:builtins.int | Expression | str) -> Representation:
+    def cos(dimension: builtins.int | Expression | str) -> Representation:
         r"""
         Create a color sextet representation.
         
@@ -517,6 +520,7 @@ class Representation:
         - dimension: The dimension of the sextet representation (e.g., 6 for SU(3))
         """
 
+@typing.final
 class Slot:
     r"""
     A tensor index slot combining a representation with an abstract index.
@@ -546,7 +550,7 @@ class Slot:
     """
     def __repr__(self) -> builtins.str: ...
     def __str__(self) -> builtins.str: ...
-    def __new__(cls, name:builtins.str, dimension:builtins.int, aind:builtins.int | Expression | str, dual:builtins.bool=False) -> Slot:
+    def __new__(cls, name: builtins.str, dimension: builtins.int, aind: builtins.int | Expression | str, dual: builtins.bool = ...) -> Slot:
         r"""
         Create a new slot with a custom representation and index.
         
@@ -584,6 +588,7 @@ class Slot:
         ```
         """
 
+@typing.final
 class Tensor:
     r"""
     A tensor class that can be either dense or sparse with flexible data types.
@@ -604,7 +609,7 @@ class Tensor:
         Iterator
         """
     @typing.overload
-    def __getitem__(self, item:builtins.slice) -> builtins.list[Expression | builtins.complex | float]:
+    def __getitem__(self, item: builtins.slice) -> builtins.list[Expression | builtins.complex | float]:
         r"""
         Get tensor elements at the specified range of indices.
         
@@ -619,7 +624,7 @@ class Tensor:
             The tensor elements at the specified range
         """
     @typing.overload
-    def __getitem__(self, item:typing.Sequence[builtins.int] | builtins.int) -> Expression | builtins.complex | float:
+    def __getitem__(self, item: typing.Sequence[builtins.int] | builtins.int) -> Expression | builtins.complex | float:
         r"""
         Get tensor element at the specified index or indices.
         
@@ -634,9 +639,9 @@ class Tensor:
             The tensor element at the specified index
         """
     @typing.overload
-    def __getitem__(self, item:builtins.slice | builtins.int | builtins.list[builtins.int]) -> typing.Any: ...
+    def __getitem__(self, item: builtins.slice | builtins.int | builtins.list[builtins.int]) -> typing.Any: ...
     @typing.overload
-    def __setitem__(self, item:typing.Sequence[builtins.int] | builtins.int, value:Expression | builtins.complex | float) -> None:
+    def __setitem__(self, item: builtins.int | typing.Sequence[builtins.int], value: Expression | builtins.complex | float) -> None:
         r"""
         Set tensor element at the specified index.
         
@@ -657,7 +662,7 @@ class Tensor:
         >>> tensor[1, 1] = 2.0
         """
     @typing.overload
-    def __setitem__(self, item:typing.Any, value:typing.Any) -> None:
+    def __setitem__(self, item: typing.Any, value: typing.Any) -> None:
         r"""
         Set tensor element(s) at the specified index or indices.
         
@@ -678,7 +683,7 @@ class Tensor:
         """
     def structure(self) -> TensorIndices: ...
     @staticmethod
-    def sparse(structure:TensorIndices | builtins.list[Slot], type_info:type) -> Tensor:
+    def sparse(structure: TensorIndices | builtins.list[Slot], type_info: type) -> Tensor:
         r"""
         Create a new sparse empty tensor with the given structure and data type.
         
@@ -702,7 +707,7 @@ class Tensor:
         >>> sparse_sym = Tensor.sparse(structure, symbolica.Expression)
         """
     @staticmethod
-    def dense(structure:TensorIndices | builtins.list[Slot], data:typing.Sequence[Expression] | typing.Sequence[builtins.float] | typing.Sequence[builtins.complex]) -> Tensor:
+    def dense(structure: TensorIndices | builtins.list[Slot], data: typing.Sequence[Expression] | typing.Sequence[builtins.float] | typing.Sequence[builtins.complex]) -> Tensor:
         r"""
         Create a new dense tensor with the given structure and data.
         
@@ -796,7 +801,7 @@ class Tensor:
     def __repr__(self) -> builtins.str: ...
     def __str__(self) -> builtins.str: ...
     def __len__(self) -> builtins.int: ...
-    def evaluator(self, constants:typing.Mapping[Expression, Expression], funs:typing.Mapping[tuple[Expression, builtins.str, typing.Sequence[Expression]], Expression], params:typing.Sequence[Expression], iterations:builtins.int=100, n_cores:builtins.int=4, verbose:builtins.bool=False) -> TensorEvaluator:
+    def evaluator(self, constants: typing.Mapping[Expression, Expression], funs: typing.Mapping[tuple[Expression, builtins.str, typing.Sequence[Expression]], Expression], params: typing.Sequence[Expression], iterations: builtins.int = ..., n_cores: builtins.int = ..., verbose: builtins.bool = ...) -> TensorEvaluator:
         r"""
         Create an optimized evaluator for symbolic tensor expressions.
         
@@ -856,6 +861,7 @@ class Tensor:
         >>> value = scalar_tensor.scalar()
         """
 
+@typing.final
 class TensorEvaluator:
     r"""
     An optimized evaluator for symbolic tensor expressions.
@@ -872,7 +878,7 @@ class TensorEvaluator:
     >>> evaluator = my_tensor.evaluator(constants={}, funs={}, params=[x, y])
     >>> results = evaluator.evaluate([[1.0, 2.0], [3.0, 4.0]])
     """
-    def evaluate(self, inputs:typing.Sequence[typing.Sequence[builtins.float]]) -> builtins.list[Tensor]:
+    def evaluate(self, inputs: typing.Sequence[typing.Sequence[builtins.float]]) -> builtins.list[Tensor]:
         r"""
         Evaluate the tensor expression for multiple real-valued parameter inputs.
         
@@ -897,11 +903,11 @@ class TensorEvaluator:
         --------
         >>> results = evaluator.evaluate([[1.0, 2.0], [3.0, 4.0]])
         """
-    def evaluate_complex(self, inputs:typing.Sequence[typing.Sequence[builtins.complex]]) -> builtins.list[Tensor]:
+    def evaluate_complex(self, inputs: typing.Sequence[typing.Sequence[builtins.complex]]) -> builtins.list[Tensor]:
         r"""
         Evaluate the expression for multiple inputs and return the results.
         """
-    def compile(self, function_name:builtins.str, filename:builtins.str, library_name:builtins.str, inline_asm:builtins.str='default', optimization_level:builtins.int=3, compiler_path:typing.Optional[builtins.str]=None, custom_header:typing.Optional[builtins.str]=None) -> CompiledTensorEvaluator:
+    def compile(self, function_name: builtins.str, filename: builtins.str, library_name: builtins.str, inline_asm: builtins.str = ..., optimization_level: builtins.int = ..., compiler_path: typing.Optional[builtins.str] = None, custom_header: typing.Optional[builtins.str] = None) -> CompiledTensorEvaluator:
         r"""
         Compile the evaluator to a shared library using C++ for maximum performance.
         
@@ -943,6 +949,26 @@ class TensorEvaluator:
         >>> results = compiled.evaluate_complex([[1.0, 2.0], [3.0, 4.0]])
         """
 
+@typing.final
+class TensorFunctionLibrary:
+    def __new__(cls) -> TensorFunctionLibrary:
+        r"""
+        Create a new empty tensor function library.
+        
+        Initializes an empty library ready for registering tensor functions.
+        
+        Returns
+        -------
+        TensorFunctionLibrary
+            A new empty function library
+        
+        Examples
+        --------
+        >>> from symbolica.community.spenso import TensorFunctionLibrary
+        >>> lib = TensorFunctionLibrary()
+        """
+
+@typing.final
 class TensorIndices:
     r"""
     A tensor structure with abstract indices for symbolic tensor operations.
@@ -962,7 +988,7 @@ class TensorIndices:
     >>> named_indices = T(mu, nu)
     >>> expr = named_indices.to_expression()
     """
-    def __new__(cls, *slots: Slot | Expression | int | str | float | complex, name:TensorName | builtins.str | Expression | None=None) -> TensorIndices:
+    def __new__(cls, *slots: TensorIndices | builtins.list[Slot], name: TensorName | builtins.str | Expression | None = None) -> TensorIndices:
         r"""
         Create tensor structure from slots and optional arguments.
         
@@ -992,7 +1018,7 @@ class TensorIndices:
         >>> named_structure = TensorIndices(mu, nu, name=T)
         """
     @typing.overload
-    def __getitem__(self, item:builtins.slice) -> builtins.list[Expression | builtins.complex | float]:
+    def __getitem__(self, item: builtins.slice) -> builtins.list[Expression | builtins.complex | float]:
         r"""
         Get expanded indices at the specified range of flattened indices.
         
@@ -1007,7 +1033,7 @@ class TensorIndices:
             List of expanded indices
         """
     @typing.overload
-    def __getitem__(self, item:typing.Sequence[builtins.int]) -> Expression | builtins.complex | float:
+    def __getitem__(self, item: typing.Sequence[builtins.int]) -> Expression | builtins.complex | float:
         r"""
         Get flattened index associated to this expanded index.
         
@@ -1022,7 +1048,7 @@ class TensorIndices:
             The flat index
         """
     @typing.overload
-    def __getitem__(self, item:builtins.int) -> Expression | builtins.complex | float:
+    def __getitem__(self, item: builtins.int) -> Expression | builtins.complex | float:
         r"""
         Get expanded index associated to this flat index.
         
@@ -1036,7 +1062,7 @@ class TensorIndices:
         list of int
             Multi-dimensional index coordinates
         """
-    def set_name(self, name:TensorName | builtins.str | Expression) -> None:
+    def set_name(self, name: TensorName | builtins.str | Expression) -> None:
         r"""
         Set the tensor name for this structure.
         
@@ -1096,31 +1122,32 @@ class TensorIndices:
         >>> expr = indices.to_expression()
         """
     def __len__(self) -> builtins.int: ...
-    def __add__(self, rhs:Expression | int | str | float | complex | TensorIndices | Expression) -> Expression:
+    def __add__(self, rhs: Expression | int | str | float | builtins.complex | TensorIndices | Expression) -> Expression:
         r"""
         Add this expression to `other`, returning the result.
         """
-    def __radd__(self, rhs:Expression | int | str | float | complex | TensorIndices | Expression) -> Expression:
+    def __radd__(self, rhs: Expression | int | str | float | builtins.complex | TensorIndices | Expression) -> Expression:
         r"""
         Add this expression to `other`, returning the result.
         """
-    def __sub__(self, rhs:Expression | int | str | float | complex | TensorIndices | Expression) -> Expression:
+    def __sub__(self, rhs: Expression | int | str | float | builtins.complex | TensorIndices | Expression) -> Expression:
         r"""
         Subtract `other` from this expression, returning the result.
         """
-    def __rsub__(self, rhs:Expression | int | str | float | complex | TensorIndices | Expression) -> Expression:
+    def __rsub__(self, rhs: Expression | int | str | float | builtins.complex | TensorIndices | Expression) -> Expression:
         r"""
         Subtract this expression from `other`, returning the result.
         """
-    def __mul__(self, rhs:Expression | int | str | float | complex | TensorIndices | Expression) -> Expression:
+    def __mul__(self, rhs: Expression | int | str | float | builtins.complex | TensorIndices | Expression) -> Expression:
         r"""
         Add this expression to `other`, returning the result.
         """
-    def __rmul__(self, rhs:Expression | int | str | float | complex | TensorIndices | Expression) -> Expression:
+    def __rmul__(self, rhs: Expression | int | str | float | builtins.complex | TensorIndices | Expression) -> Expression:
         r"""
         Add this expression to `other`, returning the result.
         """
 
+@typing.final
 class TensorLibrary:
     r"""
     A library for registering and managing tensor templates and structures.
@@ -1177,7 +1204,7 @@ class TensorLibrary:
         >>> from symbolica.community.spenso import TensorLibrary
         >>> lib = TensorLibrary.construct()
         """
-    def register(self, tensor:Tensor | LibraryTensor) -> None:
+    def register(self, tensor: Tensor | LibraryTensor) -> None:
         r"""
         Register a tensor in the library.
         
@@ -1202,7 +1229,7 @@ class TensorLibrary:
         >>> lib.register(tensor)
         >>> tensor_ref = lib[name]
         """
-    def __getitem__(self, key:Expression | int | str | float | complex | builtins.str) -> TensorStructure:
+    def __getitem__(self, key: Expression | int | str | float | builtins.complex | builtins.str) -> TensorStructure:
         r"""
         Retrieve a registered tensor structure by name.
         
@@ -1250,6 +1277,7 @@ class TensorLibrary:
         >>> gamma_structure = hep_lib[symbolica.S("spenso::gamma")]
         """
 
+@typing.final
 class TensorName:
     r"""
     A symbolic name for tensor functions and structures.
@@ -1306,7 +1334,7 @@ class TensorName:
     Predefined color generator name.
     """
     @typing.overload
-    def __call__(self, *args: Slot | Expression | int | str | float | complex) -> TensorIndices:
+    def __call__(self, *args: Slot | Expression | int | str | float | builtins.complex) -> TensorIndices:
         r"""
         Call the tensor name with arguments to create tensor structures.
         
@@ -1357,7 +1385,7 @@ class TensorName:
         >>> rep = Representation.euc(3)
         >>> structure_tensor = T(rep, rep)
         """
-    def __new__(cls, name:builtins.str, is_symmetric:typing.Optional[builtins.bool]=None, is_antisymmetric:typing.Optional[builtins.bool]=None, is_cyclesymmetric:typing.Optional[builtins.bool]=None, is_linear:typing.Optional[builtins.bool]=None, custom_normalization:typing.Optional[Transformer]=None) -> TensorName:
+    def __new__(cls, name: builtins.str, is_symmetric: typing.Optional[builtins.bool] = None, is_antisymmetric: typing.Optional[builtins.bool] = None, is_cyclesymmetric: typing.Optional[builtins.bool] = None, is_linear: typing.Optional[builtins.bool] = None, custom_normalization: typing.Optional[Transformer] = None) -> TensorName:
         r"""
         Create a new tensor name with optional mathematical properties.
         
@@ -1406,6 +1434,7 @@ class TensorName:
         >>> expr = T.to_expression()
         """
 
+@typing.final
 class TensorNetwork:
     r"""
     A tensor network representing computational graphs of tensor operations.
@@ -1429,7 +1458,7 @@ class TensorNetwork:
     >>> network.execute()
     >>> result = network.result_tensor()
     """
-    def __new__(cls, expr:Expression | int | str | float | complex | TensorIndices | Expression, library:typing.Optional[TensorLibrary]=None) -> TensorNetwork:
+    def __new__(cls, expr: Expression | int | str | float | builtins.complex | TensorIndices | Expression, library: typing.Optional[TensorLibrary] = None) -> TensorNetwork:
         r"""
         Create a tensor network by parsing an arithmetic expression.
         
@@ -1465,6 +1494,10 @@ class TensorNetwork:
         >>> result = one_net.result_scalar()
         """
     @staticmethod
+    def bracket() -> Expression: ...
+    @staticmethod
+    def broadcast(str: builtins.str) -> Expression: ...
+    @staticmethod
     def zero() -> TensorNetwork:
         r"""
         Create a tensor network representing the scalar value 0.
@@ -1480,7 +1513,7 @@ class TensorNetwork:
         >>> zero_net = TensorNetwork.zero()
         >>> result = zero_net.result_scalar()
         """
-    def replace(self, pattern:Expression | int | str | float | complex, rhs:Expression | int | str | float | complex | HeldExpression | typing.Callable[[dict[Expression, Expression]], Expression] | int | float | complex | decimal.Decimal, _cond:typing.Optional[PatternRestriction | Condition]=None, non_greedy_wildcards:typing.Optional[typing.Sequence[Expression]]=None, level_range:typing.Optional[tuple[builtins.int, typing.Optional[builtins.int]]]=None, level_is_tree_depth:typing.Optional[builtins.bool]=None, allow_new_wildcards_on_rhs:typing.Optional[builtins.bool]=None, rhs_cache_size:typing.Optional[builtins.int]=None, repeat:typing.Optional[builtins.bool]=None) -> TensorNetwork:
+    def replace(self, pattern: Expression | int | str | float | builtins.complex, rhs: Expression | int | str | float | builtins.complex | HeldExpression | typing.Callable[[dict[Expression, Expression]], Expression] | int | float | complex | decimal.Decimal, _cond: typing.Optional[PatternRestriction | Condition] = None, non_greedy_wildcards: typing.Optional[typing.Sequence[Expression]] = None, level_range: typing.Optional[tuple[builtins.int, typing.Optional[builtins.int]]] = None, level_is_tree_depth: typing.Optional[builtins.bool] = None, allow_new_wildcards_on_rhs: typing.Optional[builtins.bool] = None, rhs_cache_size: typing.Optional[builtins.int] = None, repeat: typing.Optional[builtins.bool] = None) -> TensorNetwork:
         r"""
         Replace patterns in the tensor network using symbolic pattern matching.
         
@@ -1511,7 +1544,7 @@ class TensorNetwork:
         TensorNetwork
             A new TensorNetwork with the replacements applied
         """
-    def evaluate(self, constants:typing.Mapping[Expression, builtins.float], functions:typing.Mapping[Expression, typing.Any]) -> TensorNetwork:
+    def evaluate(self, constants: typing.Mapping[Expression, builtins.float], functions: typing.Mapping[Expression, typing.Any]) -> TensorNetwork:
         r"""
         Evaluate symbolic expressions in the network with numerical values.
         
@@ -1530,7 +1563,7 @@ class TensorNetwork:
         TensorNetwork
             A new TensorNetwork with symbolic expressions evaluated
         """
-    def execute(self, library:typing.Optional[TensorLibrary]=None, n_steps:typing.Optional[builtins.int]=None, mode:ExecutionMode=...) -> None:
+    def execute(self, library: typing.Optional[TensorLibrary] = None, function_library: typing.Optional[TensorFunctionLibrary] = None, n_steps: typing.Optional[builtins.int] = None, mode: ExecutionMode = ...) -> None:
         r"""
         Execute the tensor network to perform tensor contractions and simplifications.
         
@@ -1557,7 +1590,7 @@ class TensorNetwork:
         >>> lib = TensorLibrary.hep_lib()
         >>> network.execute(library=lib)
         """
-    def result_tensor(self, library:typing.Optional[TensorLibrary]=None) -> Tensor:
+    def result_tensor(self, library: typing.Optional[TensorLibrary] = None) -> Tensor:
         r"""
         Extract the final tensor result from the executed network.
         
@@ -1619,7 +1652,7 @@ class TensorNetwork:
         Generates a DOT format representation of the computational graph that can be
         visualized using graphviz or similar tools.
         """
-    def __add__(self, rhs:Expression | int | str | float | complex | TensorIndices | Expression | TensorNetwork | Tensor) -> TensorNetwork:
+    def __add__(self, rhs: Expression | int | str | float | builtins.complex | TensorIndices | Expression | TensorNetwork | Tensor) -> TensorNetwork:
         r"""
         Add two tensor networks element-wise.
         
@@ -1639,11 +1672,11 @@ class TensorNetwork:
         >>> net2 = TensorNetwork(expr2)
         >>> sum_net = net1 + net2
         """
-    def __radd__(self, rhs:Expression | int | str | float | complex | TensorIndices | Expression | TensorNetwork | Tensor) -> TensorNetwork:
+    def __radd__(self, rhs: Expression | int | str | float | builtins.complex | TensorIndices | Expression | TensorNetwork | Tensor) -> TensorNetwork:
         r"""
         Add two tensor networks element-wise (right-hand addition).
         """
-    def __sub__(self, rhs:Expression | int | str | float | complex | TensorIndices | Expression | TensorNetwork | Tensor) -> TensorNetwork:
+    def __sub__(self, rhs: Expression | int | str | float | builtins.complex | TensorIndices | Expression | TensorNetwork | Tensor) -> TensorNetwork:
         r"""
         Subtract one tensor network from another element-wise.
         
@@ -1663,11 +1696,11 @@ class TensorNetwork:
         >>> net2 = TensorNetwork(expr2)
         >>> diff_net = net1 - net2
         """
-    def __rsub__(self, rhs:Expression | int | str | float | complex | TensorIndices | Expression | TensorNetwork | Tensor) -> TensorNetwork:
+    def __rsub__(self, rhs: Expression | int | str | float | builtins.complex | TensorIndices | Expression | TensorNetwork | Tensor) -> TensorNetwork:
         r"""
         Subtract one tensor network from another (right-hand subtraction).
         """
-    def __mul__(self, rhs:Expression | int | str | float | complex | TensorIndices | Expression | TensorNetwork | Tensor) -> TensorNetwork:
+    def __mul__(self, rhs: Expression | int | str | float | builtins.complex | TensorIndices | Expression | TensorNetwork | Tensor) -> TensorNetwork:
         r"""
         Multiply two tensor networks.
         
@@ -1687,11 +1720,12 @@ class TensorNetwork:
         >>> net2 = TensorNetwork(expr2)
         >>> product_net = net1 * net2
         """
-    def __rmul__(self, rhs:Expression | int | str | float | complex | TensorIndices | Expression | TensorNetwork | Tensor) -> TensorNetwork:
+    def __rmul__(self, rhs: Expression | int | str | float | builtins.complex | TensorIndices | Expression | TensorNetwork | Tensor) -> TensorNetwork:
         r"""
         Multiply two tensor networks (right-hand multiplication).
         """
 
+@typing.final
 class TensorStructure:
     r"""
     A tensor structure without abstract indices, defined purely by representations.
@@ -1719,7 +1753,7 @@ class TensorStructure:
     expr = structure.symbolic('a', 'b')  # T(a, b)
     ```
     """
-    def __new__(cls, *reps_and_additional_args: Representation |  Expression | int | str | float | complex, name:TensorName | builtins.str | Expression | None=None) -> TensorStructure:
+    def __new__(cls, *reps_and_additional_args: TensorIndices | builtins.list[Slot], name: TensorName | builtins.str | Expression | None = None) -> TensorStructure:
         r"""
         Construct a new TensorStructure with the given representations.
         
@@ -1747,7 +1781,7 @@ class TensorStructure:
         >>> named_structure = TensorStructure(rep, rep, name=T)
         """
     @typing.overload
-    def __getitem__(self, item:builtins.slice) -> builtins.list[Expression | builtins.complex | float]:
+    def __getitem__(self, item: builtins.slice) -> builtins.list[Expression | builtins.complex | float]:
         r"""
         Get expanded indices at the specified range of flattened indices.
         
@@ -1762,7 +1796,7 @@ class TensorStructure:
             List of expanded indices
         """
     @typing.overload
-    def __getitem__(self, item:typing.Sequence[builtins.int]) -> Expression | builtins.complex | float:
+    def __getitem__(self, item: typing.Sequence[builtins.int]) -> Expression | builtins.complex | float:
         r"""
         Get flattened index associated to this expanded index.
         
@@ -1777,7 +1811,7 @@ class TensorStructure:
             The flat index
         """
     @typing.overload
-    def __getitem__(self, item:builtins.int) -> Expression | builtins.complex | float:
+    def __getitem__(self, item: builtins.int) -> Expression | builtins.complex | float:
         r"""
         Get expanded index associated to this flat index.
         
@@ -1791,7 +1825,7 @@ class TensorStructure:
         list of int
             Multi-dimensional index coordinates
         """
-    def __call__(self, *args: builtins.int | Expression | str, extra_args:typing.Sequence[Expression | int | str | float | complex]=[]) -> Expression:
+    def __call__(self, *args: builtins.int | Expression | str, extra_args: typing.Sequence[Expression | int | str | float | builtins.complex] = []) -> Expression:
         r"""
         Convenience method for creating symbolic expressions.
         
@@ -1815,7 +1849,7 @@ class TensorStructure:
         >>> structure = TensorStructure(rep, rep, name="T")
         >>> expr = structure('mu', 'nu')
         """
-    def symbolic(self, *args: builtins.int | Expression | str, extra_args:typing.Sequence[Expression | int | str | float | complex]=[]) -> Expression:
+    def symbolic(self, *args: builtins.int | Expression | str, extra_args: typing.Sequence[Expression | int | str | float | builtins.complex] = []) -> Expression:
         r"""
         Create a symbolic expression representing this tensor structure.
         
@@ -1847,7 +1881,7 @@ class TensorStructure:
         >>> expr = structure.symbolic(x, ';', 'mu', 'nu')
         >>> expr = structure.symbolic('mu', 'nu', extra_args=[x])
         """
-    def index(self, *args: builtins.int | Expression | str, extra_args:typing.Sequence[Expression]=[], cook_indices:builtins.bool=False) -> TensorIndices:
+    def index(self, *args: builtins.int | Expression | str, extra_args: typing.Sequence[Expression] = [], cook_indices: builtins.bool = False) -> TensorIndices:
         r"""
         Create an indexed tensor (TensorIndices) from this structure.
         
@@ -1879,13 +1913,14 @@ class TensorStructure:
         >>> x = sp.S('x')
         >>> indices = structure.index(x, ';', 'mu', 'nu')
         """
-    def set_name(self, name:TensorName | builtins.str | Expression) -> None: ...
+    def set_name(self, name: TensorName | builtins.str | Expression) -> None: ...
     def get_name(self) -> typing.Optional[TensorName]: ...
     def __repr__(self) -> builtins.str: ...
     def __str__(self) -> builtins.str: ...
     def __len__(self) -> builtins.int: ...
 
-class ExecutionMode(Enum):
+@typing.final
+class ExecutionMode(enum.Enum):
     r"""
     Execution modes for tensor network evaluation.
     
@@ -1901,7 +1936,8 @@ class ExecutionMode(Enum):
     Scalar = ...
     All = ...
 
-class TensorNamespace(Enum):
+@typing.final
+class TensorNamespace(enum.Enum):
     r"""
     Enumeration for different tensor namespaces in physics.
     

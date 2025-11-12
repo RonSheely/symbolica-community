@@ -4,62 +4,7 @@
 import builtins
 from symbolica.core import Expression
 
-def conj(self_:Expression) -> Expression:
-    r"""
-    Calculate the physics-aware complex conjugate of tensor expressions.
-    
-    Applies sophisticated conjugation rules for quantum field theory and particle physics
-    objects, respecting the mathematical structure of each tensor type:
-    
-    **Complex Numbers:**
-    - `i → -i` (imaginary unit)
-    - `z* → conjugate(z)` for complex coefficients
-    
-    **Electromagnetic Fields:**
-    - Polarization vectors: `eps(p,λ) ↔ epsbar(p,λ)`
-    
-    **Spinor Fields:**
-    - Dirac spinors: `u(p,s) ↔ ū(p,s)`, `v(p,s) ↔ v̄(p,s)`
-    
-    **Gamma Matrices:**
-    - `γ^μ_{αβ} → -γ^μ_{βα}` (Hermitian conjugation with index swap)
-    - `γ^5_{αβ} → γ^5_{βα}` (γ^5 is Hermitian)
-    
-    **Color Structures:**
-    - SU(N) generators: `T^a_{ij} → T^a_{ji}` (fundamental ↔ antifundamental)
-    - Structure constants: `f^{abc} → f^{abc}` (unchanged, purely real)
-    - Color wavefunctions: fundamental ↔ antifundamental representations
-    
-    # Args:
-        self_: The symbolic expression to conjugate
-    
-    # Returns:
-        The physics-conjugated expression following QFT conventions
-    
-    # Examples:
-    ```python
-    import symbolica as sp
-    from symbolica.community.idenso import conj
-    
-    # Complex coefficients
-    expr = sp.I * sp.S('x')
-    result = conj(expr)  # -I * x
-    
-    # Spinor conjugation
-    u = sp.S('u')
-    mu = sp.S('mu')
-    spinor_expr = u(sp.S('p'), sp.S('s'))
-    conj_spinor = conj(spinor_expr)  # ubar(p, s)
-    
-    # Gamma matrix conjugation
-    gamma = sp.S('gamma')
-    alpha, beta = sp.S('alpha', 'beta')
-    gamma_expr = gamma(mu, alpha, beta)
-    conj_gamma = conj(gamma_expr)  # -gamma(mu, beta, alpha)
-    ```
-    """
-
-def cook_function(self_:Expression) -> Expression:
+def cook_function(self_: Expression) -> Expression:
     r"""
     Convert a single function call into a flattened variable symbol.
     
@@ -103,7 +48,7 @@ def cook_function(self_:Expression) -> Expression:
     ```
     """
 
-def cook_indices(self_:Expression) -> Expression:
+def cook_indices(self_: Expression) -> Expression:
     r"""
     Convert complex nested index structures into flattened symbolic names.
     
@@ -146,7 +91,9 @@ def cook_indices(self_:Expression) -> Expression:
     ```
     """
 
-def expand_bis(self_:Expression) -> Expression:
+def dirac_adjoint(self_: Expression) -> Expression: ...
+
+def expand_bis(self_: Expression) -> Expression:
     r"""
     Expands factorized terms containing Dirac bispinor indices.
     
@@ -168,7 +115,7 @@ def expand_bis(self_:Expression) -> Expression:
         Expanded expression with factorizations unfolded
     """
 
-def expand_color(self_:Expression) -> Expression:
+def expand_color(self_: Expression) -> Expression:
     r"""
     Expands factorized terms containing SU(N) color indices.
     
@@ -195,7 +142,7 @@ def expand_color(self_:Expression) -> Expression:
         Expanded expression with factorizations unfolded
     """
 
-def expand_metrics(self_:Expression) -> Expression:
+def expand_metrics(self_: Expression) -> Expression:
     r"""
     Expands factorized terms containing metric tensors.
     
@@ -209,7 +156,7 @@ def expand_metrics(self_:Expression) -> Expression:
         Expression: The expanded expression with metric factorizations unfolded
     """
 
-def expand_mink(self_:Expression) -> Expression:
+def expand_mink(self_: Expression) -> Expression:
     r"""
     Expands factorized terms containing Minkowski spacetime indices.
     
@@ -255,7 +202,7 @@ def expand_mink(self_:Expression) -> Expression:
     ```
     """
 
-def expand_mink_bis(self_:Expression) -> Expression:
+def expand_mink_bis(self_: Expression) -> Expression:
     r"""
     Expands factorized terms containing both Minkowski and bispinor indices.
     
@@ -270,7 +217,7 @@ def expand_mink_bis(self_:Expression) -> Expression:
         Expanded expression with all factorizations unfolded
     """
 
-def list_dangling(self_:Expression) -> builtins.list[Expression]:
+def list_dangling(self_: Expression) -> builtins.list[Expression]:
     r"""
     Lists the dangling (external, uncontracted) indices present in the expression.
     
@@ -310,7 +257,7 @@ def list_dangling(self_:Expression) -> builtins.list[Expression]:
     ```
     """
 
-def simplify_color(self_:Expression) -> Expression:
+def simplify_color(self_: Expression) -> Expression:
     r"""
     Applies SU(N) color algebra rules to simplify color group structures.
     
@@ -344,7 +291,7 @@ def simplify_color(self_:Expression) -> Expression:
         expression could not be fully reduced to color-scalar form.
     """
 
-def simplify_gamma(self_:Expression) -> Expression:
+def simplify_gamma(self_: Expression) -> Expression:
     r"""
     Applies Clifford algebra rules and trace identities to simplify gamma matrix expressions.
     
@@ -379,7 +326,7 @@ def simplify_gamma(self_:Expression) -> Expression:
     ```
     """
 
-def simplify_metrics(self_:Expression) -> Expression:
+def simplify_metrics(self_: Expression) -> Expression:
     r"""
     Simplifies contractions involving metric tensors and identity tensors.
     
@@ -417,7 +364,7 @@ def simplify_metrics(self_:Expression) -> Expression:
     ```
     """
 
-def to_dots(self_:Expression) -> Expression:
+def to_dots(self_: Expression) -> Expression:
     r"""
     Converts contracted Lorentz/Minkowski indices into dot product notation.
     
@@ -451,7 +398,7 @@ def to_dots(self_:Expression) -> Expression:
     ```
     """
 
-def wrap_dummies(self_:Expression, header:Expression) -> Expression:
+def wrap_dummies(self_: Expression, header: Expression) -> Expression:
     r"""
     Wraps only the dummy (contracted) indices within the expression using a header symbol.
     
@@ -491,7 +438,7 @@ def wrap_dummies(self_:Expression, header:Expression) -> Expression:
     ```
     """
 
-def wrap_indices(self_:Expression, header:Expression) -> Expression:
+def wrap_indices(self_: Expression, header: Expression) -> Expression:
     r"""
     Wrap all abstract indices with a header symbol
     

@@ -8,8 +8,8 @@ license = "MIT"
 name = "symbolica_community"
 readme = "Readme.md"
 repository = "https://github.com/benruijl/symbolica-community"
-rust-version = "1.73"
-version = "0.18.0"
+rust-version = "1.88"
+version = "0.20.0"
 
 
 [[bin]]
@@ -33,23 +33,25 @@ python_stubgen = [
 [dependencies]
 example_extension = { path = "example_extension" }
 idenso = { version = "0.2.3", features = ["bincode", "python"] }
-symbolica = { version = "0.19", features = ["python_export"] }
+symbolica = { version = "0.20", features = ["python_export"] }
 pyo3 = "0.27"
-pyo3-stub-gen = { version = "0.16", optional = true, default-features = false }
+pyo3-stub-gen = { version = "0.16", optional = true, default-features = false, features = [
+    "numpy",
+] }
 spynso3 = { version = "0.1" }
-vakint = { git = "https://github.com/alphal00p/vakint", rev = "2bf65b038a756fcc8dbb1c7f6708997cfc9cd6d6", features = [
+vakint = { git = "https://github.com/alphal00p/vakint", rev = "86092e16d5db64aef9d4a7aade69ccd945703dc7", features = [
     "symbolica_community_module",
 ] }
 
 [patch.crates-io]
-spynso3 = { git = "https://github.com/alphal00p/spenso", rev = "08c56e08ff3429bd56b6c51c4e1f8b479d7552d5" }
-idenso = { git = "https://github.com/alphal00p/spenso", rev = "08c56e08ff3429bd56b6c51c4e1f8b479d7552d5" }
-spenso = { git = "https://github.com/alphal00p/spenso", rev = "08c56e08ff3429bd56b6c51c4e1f8b479d7552d5" }
-spenso-hep-lib = { git = "https://github.com/alphal00p/spenso", rev = "08c56e08ff3429bd56b6c51c4e1f8b479d7552d5" }
-# vakint = {git }
-# spynso3 = { path = "../spenso/spynso3" }
-symbolica = { git = "https://github.com/benruijl/symbolica", branch = "modules" }
-# pyo3-stub-gen = { git = "https://github.com/benruijl/pyo3-stub-gen", branch = "patched" }
+spynso3 = { git = "https://github.com/alphal00p/spenso", rev = "5f163d973e6ffb4ff03c476b21f7b27c9f24003e" }
+idenso = { git = "https://github.com/alphal00p/spenso", rev = "5f163d973e6ffb4ff03c476b21f7b27c9f24003e" }
+spenso = { git = "https://github.com/alphal00p/spenso", rev = "5f163d973e6ffb4ff03c476b21f7b27c9f24003e" }
+spenso-hep-lib = { git = "https://github.com/alphal00p/spenso", rev = "5f163d973e6ffb4ff03c476b21f7b27c9f24003e" }
+#pyo3-stub-gen = { git = "https://github.com/Jij-Inc/pyo3-stub-gen", rev = "b13f213a748ee09bf22073e0e4d82cb09d797a5c", optional = true, default-features = false, features = [
+#    "numpy",
+#] }
+
 
 [build-dependencies]
 pyo3-build-config = "*"

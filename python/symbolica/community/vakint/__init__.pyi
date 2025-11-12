@@ -5,13 +5,14 @@ import builtins
 import typing
 from symbolica.core import Expression
 
+@typing.final
 class Vakint:
     r"""
     Base class of vakint engine, from which all vakint functions are initiated.
     It is best to create a single instance of this class and reuse it for multiple evaluations,
     as the setup of the instance can be time consuming since it involves the processing of all known topologies.
     """
-    def __new__(cls, run_time_decimal_precision:typing.Optional[builtins.int]=None, evaluation_order:typing.Optional[typing.Sequence[VakintEvaluationMethod]]=None, epsilon_symbol:typing.Optional[Expression]=None, mu_r_sq_symbol:typing.Optional[Expression]=None, form_exe_path:typing.Optional[builtins.str]=None, python_exe_path:typing.Optional[builtins.str]=None, verify_numerator_identification:typing.Optional[builtins.bool]=None, integral_normalization_factor:typing.Optional[builtins.str]=None, allow_unknown_integrals:typing.Optional[builtins.bool]=None, clean_tmp_dir:typing.Optional[builtins.bool]=None, number_of_terms_in_epsilon_expansion:typing.Optional[builtins.int]=None, use_dot_product_notation:typing.Optional[builtins.bool]=None, temporary_directory:typing.Optional[builtins.str]=None) -> Vakint:
+    def __new__(cls, run_time_decimal_precision: typing.Optional[builtins.int] = None, evaluation_order: typing.Optional[typing.Sequence[VakintEvaluationMethod]] = None, epsilon_symbol: typing.Optional[Expression] = None, mu_r_sq_symbol: typing.Optional[Expression] = None, form_exe_path: typing.Optional[builtins.str] = None, python_exe_path: typing.Optional[builtins.str] = None, verify_numerator_identification: typing.Optional[builtins.bool] = None, integral_normalization_factor: typing.Optional[builtins.str] = None, allow_unknown_integrals: typing.Optional[builtins.bool] = None, clean_tmp_dir: typing.Optional[builtins.bool] = None, number_of_terms_in_epsilon_expansion: typing.Optional[builtins.int] = None, use_dot_product_notation: typing.Optional[builtins.bool] = None, temporary_directory: typing.Optional[builtins.str] = None) -> Vakint:
         r"""
         Create a new Vakint instance, specifying details of the evaluation stack. Note that the same instance can be recycled across multiple evaluations.
         Note that the creation of a Vakint instance involves the processing and creation of the library of all known topologies, which can be time consuming.
@@ -70,7 +71,7 @@ class Vakint:
         temporary_directory : Optional[str]
             The path to the temporary directory to be used. Default is None, in which case a system temporary directory will be used.
         """
-    def numerical_result_from_expression(self, expr:Expression) -> VakintNumericalResult:
+    def numerical_result_from_expression(self, expr: Expression) -> VakintNumericalResult:
         r"""
         Convert a Symbolica expression to a vakint numerical result, interpreting the expression as a Laurent series in the dimensional regularisation parameter epsilon.
         
@@ -89,7 +90,7 @@ class Vakint:
         expr : Expression
           A Symbolica expression representing a Laurent series in the dimensional regularisation parameter epsilon specified in the vakint engine.
         """
-    def numerical_evaluation(self, evaluated_integral:typing.Any, params:typing.Mapping[builtins.str, builtins.float], externals:typing.Optional[typing.Mapping[builtins.int, tuple[builtins.float, builtins.float, builtins.float, builtins.float]]]=None) -> tuple[VakintNumericalResult, typing.Optional[VakintNumericalResult]]:
+    def numerical_evaluation(self, evaluated_integral: typing.Any, params: typing.Mapping[builtins.str, builtins.float], externals: typing.Optional[typing.Mapping[builtins.int, tuple[builtins.float, builtins.float, builtins.float, builtins.float]]] = None) -> tuple[VakintNumericalResult, typing.Optional[VakintNumericalResult]]:
         r"""
         Perform a numerical evaluation of an integral parameterically evaluated by Vakint, given numerical values for all parameters and optionally for external momenta.
         
@@ -121,7 +122,7 @@ class Vakint:
         externals : Optional[Dict[int, Tuple[float, float, float, float]]]
           An optional dictionary mapping external momentum indices to their numerical 4-vector values.
         """
-    def numerical_result_to_expression(self, result:VakintNumericalResult) -> Expression:
+    def numerical_result_to_expression(self, result: VakintNumericalResult) -> Expression:
         r"""
         Convert a vakint numerical result back to a Symbolica expression representing a Laurent series in the dimensional regularisation parameter epsilon.
         
@@ -139,7 +140,7 @@ class Vakint:
         vakint.numerical_result_to_expression(numerical_result)
         # 107.7642844179578𝑖*ε+27.63489232305020𝑖*ε^-1+-138.7269737122023𝑖*ε^2+-62.73919274007806𝑖
         """
-    def to_canonical(self, integral_expression:Expression, short_form:typing.Optional[builtins.bool]=None) -> Expression:
+    def to_canonical(self, integral_expression: Expression, short_form: typing.Optional[builtins.bool] = None) -> Expression:
         r"""
         Convert a vakint expression to its canonical form, optionally using a short form for the topology representation.
         
@@ -160,7 +161,7 @@ class Vakint:
         short_form : Optional[bool]
           Whether to use the short form for the topology representation. Default is False.
         """
-    def tensor_reduce(self, integral_expression:Expression) -> Expression:
+    def tensor_reduce(self, integral_expression: Expression) -> Expression:
         r"""
         Convert a vakint expression to a form where tensor integrals are reduced to scalar integrals.
         
@@ -177,7 +178,7 @@ class Vakint:
         integral_expression : Expression
            A Symbolica expression representing a vakint integral.
         """
-    def evaluate_integral(self, integral_expression:Expression) -> Expression:
+    def evaluate_integral(self, integral_expression: Expression) -> Expression:
         r"""
         Perform the parametric evaluation of *only the integral* appearing in the Symbolica expression given in input representing a vakint integral.
         The numerator is left unchanged.
@@ -196,7 +197,7 @@ class Vakint:
         integral_expression : Expression
           A Symbolica expression representing a vakint integral.
         """
-    def evaluate(self, integral_expression:Expression) -> Expression:
+    def evaluate(self, integral_expression: Expression) -> Expression:
         r"""
         Perform the complete parametric evaluation of the vaking integral represented by the Symbolica expression given in input.
         Note that the tensor reduction will be automatically performed on the input given.
@@ -216,6 +217,7 @@ class Vakint:
           A Symbolica expression representing a vakint integral.
         """
 
+@typing.final
 class VakintEvaluationMethod:
     r"""
     Class representing a vakint evaluation method, which can be used to specify the evaluation order in a Vakint instance.
@@ -236,7 +238,7 @@ class VakintEvaluationMethod:
         ```
         """
     @classmethod
-    def new_matad_method(cls, expand_masters:typing.Optional[builtins.bool]=None, susbstitute_masters:typing.Optional[builtins.bool]=None, substitute_hpls:typing.Optional[builtins.bool]=None, direct_numerical_substition:typing.Optional[builtins.bool]=None) -> VakintEvaluationMethod:
+    def new_matad_method(cls, expand_masters: typing.Optional[builtins.bool] = None, susbstitute_masters: typing.Optional[builtins.bool] = None, substitute_hpls: typing.Optional[builtins.bool] = None, direct_numerical_substition: typing.Optional[builtins.bool] = None) -> VakintEvaluationMethod:
         r"""
         Create a new VakintEvaluationMethod instance representing the MATAD method.
         
@@ -263,7 +265,7 @@ class VakintEvaluationMethod:
            Whether to perform direct numerical substitution. Default is True.
         """
     @classmethod
-    def new_fmft_method(cls, expand_masters:typing.Optional[builtins.bool]=None, susbstitute_masters:typing.Optional[builtins.bool]=None) -> VakintEvaluationMethod:
+    def new_fmft_method(cls, expand_masters: typing.Optional[builtins.bool] = None, susbstitute_masters: typing.Optional[builtins.bool] = None) -> VakintEvaluationMethod:
         r"""
         Create a new VakintEvaluationMethod instance representing the FMFT method.
         
@@ -284,7 +286,7 @@ class VakintEvaluationMethod:
           Whether to substitute master integrals. Default is True.
         """
     @classmethod
-    def new_pysecdec_method(cls, quiet:typing.Optional[builtins.bool]=None, relative_precision:typing.Optional[builtins.float]=None, min_n_evals:typing.Optional[builtins.int]=None, max_n_evals:typing.Optional[builtins.int]=None, reuse_existing_output:typing.Optional[builtins.str]=None, numerical_masses:typing.Optional[typing.Mapping[builtins.str, builtins.float]]=None, numerical_external_momenta:typing.Optional[typing.Mapping[builtins.int, tuple[builtins.float, builtins.float, builtins.float, builtins.float]]]=None) -> VakintEvaluationMethod:
+    def new_pysecdec_method(cls, quiet: typing.Optional[builtins.bool] = None, relative_precision: typing.Optional[builtins.float] = None, min_n_evals: typing.Optional[builtins.int] = None, max_n_evals: typing.Optional[builtins.int] = None, reuse_existing_output: typing.Optional[builtins.str] = None, numerical_masses: typing.Optional[typing.Mapping[builtins.str, builtins.float]] = None, numerical_external_momenta: typing.Optional[typing.Mapping[builtins.int, tuple[builtins.float, builtins.float, builtins.float, builtins.float]]] = None) -> VakintEvaluationMethod:
         r"""
         Create a new VakintEvaluationMethod instance representing the numerical pySecDec method.
         
@@ -322,6 +324,7 @@ class VakintEvaluationMethod:
            A dictionary mapping external momentum indices to their numerical 4-vector values. Default is an empty dictionary.
         """
 
+@typing.final
 class VakintExpression:
     def __str__(self) -> builtins.str:
         r"""
@@ -343,7 +346,7 @@ class VakintExpression:
         # (k(1,11)^2) x topo(prop(1,edge(1,1),k(1),muvsq,1))
         ```
         """
-    def __new__(cls, atom:typing.Any) -> VakintExpression:
+    def __new__(cls, atom: typing.Any) -> VakintExpression:
         r"""
         Create a new VakintExpression from a Symbolica Expression which will separate numerator and topologies
         
@@ -373,6 +376,7 @@ class VakintExpression:
           A Symbolica Expression containing a vakint integral, i.e. a sum of terms, each a product of a numerator and a `vakint::topo(...)` structure.
         """
 
+@typing.final
 class VakintNumericalResult:
     r"""
     Container class storing the result of a numerical evaluation of a vakint expression as a Laurent series in the dimensional regularisation parameter epsilon.
@@ -413,7 +417,7 @@ class VakintNumericalResult:
         # [(-3, (0.0, -11440.53140354612)), (-2, (0.0, 57169.95521898031)), (-1, (0.0, -178748.9838377694)), (0, (0.0, 321554.1122184795))]
         ```
         """
-    def __new__(cls, values:typing.Sequence[tuple[builtins.int, tuple[builtins.float, builtins.float]]]) -> VakintNumericalResult:
+    def __new__(cls, values: typing.Sequence[tuple[builtins.int, tuple[builtins.float, builtins.float]]]) -> VakintNumericalResult:
         r"""
         Create a new instance of VakintNumericalResult from a list of (espilon exponent, (real, imag)) tuples.
         
@@ -434,7 +438,7 @@ class VakintNumericalResult:
            A list of tuples, each containing an integer exponent of epsilon and a tuple of two floats
            representing the real and imaginary parts of the coefficient.
         """
-    def compare_to(self, other:VakintNumericalResult, relative_threshold:builtins.float, error:typing.Optional[VakintNumericalResult]=None, max_pull:typing.Optional[builtins.float]=None) -> tuple[builtins.bool, builtins.str]:
+    def compare_to(self, other: VakintNumericalResult, relative_threshold: builtins.float, error: typing.Optional[VakintNumericalResult] = None, max_pull: typing.Optional[builtins.float] = None) -> tuple[builtins.bool, builtins.str]:
         r"""
         Compare this numerical result to another, returning a tuple of (bool, str) where the bool indicates whether the results match within the specified thresholds,
         and the str provides details of the comparison.

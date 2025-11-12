@@ -18,6 +18,17 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Callable, Literal, overload, Iterator, Optional, Sequence, Tuple, List
 from decimal import Decimal
+import numpy as np
+import numpy.typing as npt
+
+
+def use_custom_logger() -> None:
+    """Enable logging using Python's logging module instead of using the default logging.
+    This is useful when using Symbolica in a Jupyter notebook or other environments
+    where stdout is not easily accessible.
+
+    This function must be called before any Symbolica logging events are emitted.
+    """
 
 
 def get_version() -> str:
@@ -55,6 +66,11 @@ def S(name: str,
       is_antisymmetric: Optional[bool] = None,
       is_cyclesymmetric: Optional[bool] = None,
       is_linear: Optional[bool] = None,
+      is_scalar: Optional[bool] = None,
+      is_real: Optional[bool] = None,
+      is_integer: Optional[bool] = None,
+      is_positive: Optional[bool] = None,
+      tags: Optional[Sequence[str]] = None,
       custom_normalization: Optional[Transformer] = None,
       custom_print: Optional[Callable[..., Optional[str]]] = None,
       custom_derivative: Optional[Callable[[Expression, int], Expression]] = None) -> Expression:
@@ -126,6 +142,16 @@ def S(name: str,
         Set to true if the symbol is cyclesymmetric.
     is_linear : Optional[bool]
         Set to true if the symbol is linear.
+    is_scalar : Optional[bool]
+        Set to true if the symbol is a scalar. It will be moved out of linear functions.
+    is_real : Optional[bool]
+        Set to true if the symbol is a real number.
+    is_integer : Optional[bool]
+        Set to true if the symbol is an integer.
+    is_positive : Optional[bool]
+        Set to true if the symbol is a positive number.
+    tags: Optional[Sequence[str]] = None
+        A list of tags to associate with the symbol.
     custom_normalization : Optional[Transformer]
         A transformer that is called after every normalization. Note that the symbol
         name cannot be used in the transformer as this will lead to a definition of the
@@ -144,7 +170,12 @@ def S(*names: str,
       is_symmetric: Optional[bool] = None,
       is_antisymmetric: Optional[bool] = None,
       is_cyclesymmetric: Optional[bool] = None,
-      is_linear: Optional[bool] = None) -> Sequence[Expression]:
+      is_linear: Optional[bool] = None,
+      is_scalar: Optional[bool] = None,
+      is_real: Optional[bool] = None,
+      is_integer: Optional[bool] = None,
+      is_positive: Optional[bool] = None,
+      tags: Optional[Sequence[str]] = None) -> Sequence[Expression]:
     """
     Create new symbols from `names`. Symbols can have attributes,
     such as symmetries. If no attributes
@@ -174,6 +205,16 @@ def S(*names: str,
         Set to true if the symbol is cyclesymmetric.
     is_linear : Optional[bool]
         Set to true if the symbol is multilinear.
+    is_scalar : Optional[bool]
+        Set to true if the symbol is a scalar. It will be moved out of linear functions.
+    is_real : Optional[bool]
+        Set to true if the symbol is a real number.
+    is_integer : Optional[bool]
+        Set to true if the symbol is an integer.
+    is_positive : Optional[bool]
+        Set to true if the symbol is a positive number.
+    tags: Optional[Sequence[str]] = None
+        A list of tags to associate with the symbol.
     """
 
 
@@ -199,7 +240,7 @@ def N(num: int | float | complex | str | Decimal, relative_error: Optional[float
     """
 
 
-def E(input: str, default_namespace: str = "python") -> Expression:
+def E(input: str, mode: ParseMode = ParseMode.Symbolica, default_namespace: str = "python") -> Expression:
     """
     Parse a Symbolica expression from a string.
 
@@ -207,23 +248,70 @@ def E(input: str, default_namespace: str = "python") -> Expression:
     ----------
     input: str
         An input string. UTF-8 characters are allowed.
+    mode: ParseMode
+        The parsing mode to use. Use `ParseMode.Mathematica` to parse Mathematica expressions.
+    default_namespace: str
+        The default namespace to use when parsing symbols.
 
     Examples
     --------
     >>> e = E('x^2+y+y*4')
     >>> print(e)
-    x^2+5*y
+
+    `x^2+5*y`
+
+    >>> e = E('Cos[test`x] (2+ 3 I)', mode=ParseMode.Mathematica)
+    >>> print(e)
+
+    `cos(test::x)(2+3i)`
 
     Raises
     ------
     ValueError
-        If the input is not a valid Symbolica expression.
+        If the input is not a valid expression.
     """
 
 
 def T() -> Transformer:
     """
     Create a new transformer that maps an expression.
+    """
+
+
+@overload
+def P(poly: str, default_namespace: str = "python", vars: Optional[Sequence[Expression]] = None) -> Polynomial:
+    """Parse a string a polynomial, optionally, with the variable ordering specified in `vars`.
+    All non-polynomial parts will be converted to new, independent variables.
+    """
+
+
+@overload
+def P(poly: str,  minimal_poly: Polynomial, default_namespace: str = "python", vars: Optional[Sequence[Expression]] = None,
+      ) -> NumberFieldPolynomial:
+    """Parse string to a polynomial, optionally, with the variables and the ordering specified in `vars`.
+    All non-polynomial elements will be converted to new independent variables.
+
+    The coefficients will be converted to a number field with the minimal polynomial `minimal_poly`.
+    The minimal polynomial must be a monic, irreducible univariate polynomial.
+    """
+
+
+@overload
+def P(poly: str,
+      modulus: int,
+      default_namespace: str = "python",
+      power: Optional[Tuple[int, Expression]] = None,
+      minimal_poly: Optional[Polynomial] = None,
+      vars: Optional[Sequence[Expression]] = None,
+      ) -> FiniteFieldPolynomial:
+    """Parse a string to a polynomial, optionally, with the variables and the ordering specified in `vars`.
+    All non-polynomial elements will be converted to new independent variables.
+
+    The coefficients will be converted to finite field elements modulo `modulus`.
+    If on top a `power` is provided, for example `(2, a)`, the polynomial will be converted to the Galois field
+    `GF(modulus^2)` where `a` is the variable of the minimal polynomial of the field.
+
+    If a `minimal_poly` is provided, the Galois field will be created with `minimal_poly` as the minimal polynomial.
     """
 
 
@@ -242,6 +330,27 @@ class AtomType(Enum):
     """The expression is a product."""
     Pow = 6
     """The expression is a power."""
+
+
+class SymbolAttribute(Enum):
+    """Specifies the attributes of a symbol."""
+
+    Symmetric = 1,
+    """ The function is symmetric. """
+    Antisymmetric = 2,
+    """ The function is antisymmetric."""
+    Cyclesymmetric = 3,
+    """ The function is cyclesymmetric."""
+    Linear = 4,
+    """The function is linear."""
+    Scalar = 5,
+    """The symbol represents a scalar. It will be moved out of linear functions."""
+    Real = 6,
+    """The symbol represents a real number."""
+    Integer = 7,
+    """The symbol represents an integer."""
+    Positive = 8,
+    """The symbol represents a positive number."""
 
 
 class AtomTree:
@@ -268,6 +377,15 @@ class AtomTree:
     """The string data of this atom."""
     tail: List[AtomTree]
     """The list of child atoms of this atom."""
+
+
+class ParseMode(Enum):
+    """Specifies the parse mode."""
+
+    Symbolica = 1
+    """Parse using Symbolica notation."""
+    Mathematica = 2
+    """Parse using Mathematica notation."""
 
 
 class PrintMode(Enum):
@@ -306,6 +424,15 @@ class Expression:
     I: Expression
     """The mathematical constant `i`, where `i^2 = -1`."""
 
+    INFINITY: Expression
+    """The number that represents infinity: `∞`."""
+
+    COMPLEX_INFINITY: Expression
+    """The number that represents infinity with an unknown complex phase: `∞`."""
+
+    INDETERMINATE: Expression
+    """The number that represents indeterminacy: `¿`."""
+
     COEFF: Expression
     """The built-in function that convert a rational polynomials to a coefficient."""
 
@@ -321,6 +448,12 @@ class Expression:
     LOG: Expression
     """The built-in logarithm function."""
 
+    SQRT: Expression
+    """The built-in square root function."""
+
+    CONJ: Expression
+    """The built-in complex conjugate function."""
+
     @overload
     @classmethod
     def symbol(_cls,
@@ -329,6 +462,11 @@ class Expression:
                is_antisymmetric: Optional[bool] = None,
                is_cyclesymmetric: Optional[bool] = None,
                is_linear: Optional[bool] = None,
+               is_scalar: Optional[bool] = None,
+               is_real: Optional[bool] = None,
+               is_integer: Optional[bool] = None,
+               is_positive: Optional[bool] = None,
+               tags: Optional[Sequence[str]] = None,
                custom_normalization: Optional[Transformer] = None,
                custom_print: Optional[Callable[..., Optional[str]]] = None,
                custom_derivative: Optional[Callable[[Expression, int], Expression]] = None) -> Expression:
@@ -400,6 +538,16 @@ class Expression:
             Set to true if the symbol is cyclesymmetric.
         is_linear : Optional[bool]
             Set to true if the symbol is linear.
+        is_scalar : Optional[bool]
+            Set to true if the symbol is a scalar. It will be moved out of linear functions.
+        is_real : Optional[bool]
+            Set to true if the symbol is a real number.
+        is_integer : Optional[bool]
+            Set to true if the symbol is an integer.
+        is_positive : Optional[bool]
+            Set to true if the symbol is a positive number.
+        tags: Optional[Sequence[str]]
+            A list of tags to associate with the symbol.
         custom_normalization : Optional[Transformer]
             A transformer that is called after every normalization. Note that the symbol
             name cannot be used in the transformer as this will lead to a definition of the
@@ -419,7 +567,12 @@ class Expression:
                is_symmetric: Optional[bool] = None,
                is_antisymmetric: Optional[bool] = None,
                is_cyclesymmetric: Optional[bool] = None,
-               is_linear: Optional[bool] = None) -> Sequence[Expression]:
+               is_linear: Optional[bool] = None,
+               is_real: Optional[bool] = None,
+               is_scalar: Optional[bool] = None,
+               is_integer: Optional[bool] = None,
+               is_positive: Optional[bool] = None,
+               tags: Optional[Sequence[str]] = None) -> Sequence[Expression]:
         """
         Create new symbols from `names`. Symbols can have attributes,
         such as symmetries. If no attributes
@@ -449,6 +602,16 @@ class Expression:
             Set to true if the symbol is cyclesymmetric.
         is_linear : Optional[bool]
             Set to true if the symbol is multilinear.
+        is_scalar : Optional[bool]
+            Set to true if the symbol is a scalar. It will be moved out of linear functions.
+        is_real : Optional[bool]
+            Set to true if the symbol is a real number.
+        is_integer : Optional[bool]
+            Set to true if the symbol is an integer.
+        is_positive : Optional[bool]
+            Set to true if the symbol is a positive number.
+        tags: Optional[Sequence[str]]
+            A list of tags to associate with the symbol.
         """
 
     @overload
@@ -504,7 +667,7 @@ class Expression:
         """Return all defined symbol names (function names and variables)."""
 
     @classmethod
-    def parse(_cls, input: str, default_namespace: str = "python") -> Expression:
+    def parse(_cls, input: str, mode: ParseMode = ParseMode.Symbolica, default_namespace: str = "python") -> Expression:
         """
         Parse a Symbolica expression from a string.
 
@@ -512,17 +675,27 @@ class Expression:
         ----------
         input: str
             An input string. UTF-8 characters are allowed.
+        mode: ParseMode
+            The parsing mode to use. Use `ParseMode.Mathematica` to parse Mathematica expressions.
+        default_namespace: str
+            The default namespace to use when parsing symbols.
 
         Examples
         --------
         >>> e = E('x^2+y+y*4')
         >>> print(e)
-        x^2+5*y
+
+        `x^2+5*y`
+
+        >>> e = E('Cos[test`x] (2+ 3 I)', mode=ParseMode.Mathematica)
+        >>> print(e)
+
+        `cos(test::x)(2+3i)`
 
         Raises
         ------
         ValueError
-            If the input is not a valid Symbolica expression.
+            If the input is not a valid expression.
         """
 
     def __new__(cls) -> Expression:
@@ -543,6 +716,17 @@ class Expression:
         Convert the expression into a canonical string that
         is independent on the order of the variables and other
         implementation details.
+        """
+
+    def to_int(self) -> int:
+        """
+        Convert the expression to an integer if possible.
+        Raises a `ValueError` if the expression is not an integer.
+
+        Examples
+        --------
+        >>> e = E('7')
+        >>> n = e.to_int()
         """
 
     @classmethod
@@ -597,7 +781,7 @@ class Expression:
         terms_on_new_line: bool = False,
         color_top_level_sum: bool = True,
         color_builtin_symbols: bool = True,
-        print_finite_field: bool = True,
+        print_ring: bool = True,
         symmetric_representation_for_finite_field: bool = False,
         explicit_rational_polynomial: bool = False,
         number_thousands_separator: Optional[str] = None,
@@ -606,6 +790,7 @@ class Expression:
         square_brackets_for_function: bool = False,
         num_exp_as_superscript: bool = True,
         show_namespaces: bool = False,
+        include_attributes: bool = False,
         max_terms: Optional[int] = 100,
         custom_print_mode: Optional[int] = None,
     ) -> str:
@@ -661,6 +846,18 @@ class Expression:
         >>> s = sympy.parse_expr(E('x^2+f((1+x)^y)').to_sympy())
         """
 
+    def to_mathematica(self, show_namespaces: bool = True) -> str:
+        """
+        Convert the expression into a Mathematica-parsable string.
+
+        Examples
+        --------
+        >>> a = E('cos(x+2i + 3)+sqrt(conj(x)) + test::y')
+        >>> print(a.to_mathematica(show_namespaces=True))
+
+        Yields ```test`y+Cos[x+3+2I]+Sqrt[Conjugate[x]]```.
+        """
+
     def __hash__(self) -> str:
         """
         Hash the expression.
@@ -672,10 +869,92 @@ class Expression:
     def to_atom_tree(self) -> AtomTree:
         """Convert the expression to a tree."""
 
-    def get_name(self) -> Optional[str]:
+    def get_name(self) -> str:
         """
         Get the name of a variable or function if the current atom
-        is a variable or function.
+        is a variable or function, otherwise throw an error.
+        """
+
+    def get_tags(self) -> list[str]:
+        """
+        Get the tags of a variable or function if the current atom
+        is a variable or function, otherwise throw an error.
+        """
+
+    def get_attributes(self) -> list[SymbolAttribute]:
+        """
+        Get the attributes of a variable or function if the current atom
+        is a variable or function, otherwise throw an error.
+        """
+
+    def is_scalar(self) -> bool:
+        """
+        Check if the expression is a scalar. Symbols must have the scalar attribute.
+
+        Examples
+        --------
+        >>> x = S('x', is_scalar=True)
+        >>> e = (x + 1)**2 + 5
+        >>> print(e.is_scalar())
+        True
+        """
+
+    def is_real(self) -> bool:
+        """
+        Check if the expression is real. Symbols must have the real attribute.
+
+        Examples
+        --------
+        >>> x = S('x', is_real=True)
+        >>> e = (x + 1)**2 / 2 + 5
+        >>> print(e.is_real())
+        True
+        """
+
+    def is_integer(self) -> bool:
+        """
+        Check if the expression is integer. Symbols must have the integer attribute.
+
+        Examples
+        --------
+        >>> x = S('x', is_integer=True)
+        >>> e = (x + 1)**2 + 5
+        >>> print(e.is_integer())
+        True
+        """
+
+    def is_positive(self) -> bool:
+        """
+        Check if the expression is a positive scalar. Symbols must have the positive attribute.
+
+        Examples
+        --------
+        >>> x = S('x', is_positive=True)
+        >>> e = (x + 1)**2 + 5
+        >>> print(e.is_positive())
+        True
+        """
+
+    def is_finite(self) -> bool:
+        """
+        Check if the expression has no infinities and is not indeterminate.
+
+        Examples
+        --------
+        >>> e = E('1/x + x^2 + log(0)')
+        >>> print(e.is_finite())
+        False
+        """
+
+    def is_constant(self) -> bool:
+        """
+        Check if the expression is constant, i.e. contains no user-defined symbols or functions.
+
+        Examples
+        --------
+        >>> e = E('cos(2 + exp(3)) + 5')
+        >>> print(e.is_constant())
+        True
         """
 
     def __add__(self, other: Expression | int | float | complex | Decimal) -> Expression:
@@ -730,12 +1009,12 @@ class Expression:
 
     def __xor__(self, a: Any) -> Expression:
         """
-        Returns a warning that `**` should be used instead of `^` for taking a power.
+        Returns a warning that `**` should be used instead of ` ^ ` for taking a power.
         """
 
     def __rxor__(self, a: Any) -> Expression:
         """
-        Returns a warning that `**` should be used instead of `^` for taking a power.
+        Returns a warning that `**` should be used instead of ` ^ ` for taking a power.
         """
 
     def __neg__(self) -> Expression:
@@ -746,6 +1025,43 @@ class Expression:
     def __len__(self) -> int:
         """
         Return the number of terms in this expression.
+        """
+
+    def cos(self) -> Expression:
+        """
+        Take the cosine of this expression, returning the result.
+        """
+
+    def sin(self) -> Expression:
+        """
+        Take the sine of this expression, returning the result.
+        """
+
+    def exp(self) -> Expression:
+        """
+        Take the exponential of this expression, returning the result.
+        """
+
+    def log(self) -> Expression:
+        """
+        Take the logarithm of this expression, returning the result.
+        """
+
+    def sqrt(self) -> Expression:
+        """
+        Take the square root of this expression, returning the result.
+        """
+
+    def conj(self) -> Expression:
+        """
+        Take the complex conjugate of this expression, returning the result.
+
+        Examples
+        --------
+        >>> e = E('x+2 + 3^x + (5+2i) * (test::{real}::real) + (-2)^x')
+        >>> print(e.conj())
+
+        Yields `(5-2𝑖)*real+3^conj(x)+conj(x)+conj((-2)^x)+2`.
         """
 
     def hold(self, t: Transformer) -> HeldExpression:
@@ -785,14 +1101,11 @@ class Expression:
         The symbols are sorted in Symbolica's internal ordering.
         """
 
-    def coefficients_to_float(self, decimal_prec: int) -> Expression:
-        """Convert all coefficients to floats with a given precision `decimal_prec`.
+    def to_float(self, decimal_prec: int = 16) -> Expression:
+        """Convert all coefficients and built-in functions to floats with a given precision `decimal_prec`.
         The precision of floating point coefficients in the input will be truncated to `decimal_prec`."""
 
-    def conjugate(self) -> Expression:
-        """Complex conjugate all complex numbers in the expression."""
-
-    def rationalize_coefficients(self, relative_error: float) -> Expression:
+    def rationalize(self, relative_error: float = 0.01) -> Expression:
         """Map all floating point and rational coefficients to the best rational approximation
         in the interval `[self*(1-relative_error),self*(1+relative_error)]`."""
 
@@ -801,13 +1114,43 @@ class Expression:
         Create a pattern restriction based on the wildcard length before downcasting.
         """
 
+    def req_tag(self, tag: str) -> PatternRestriction:
+        """
+        Create a pattern restriction based on the tag of a matched variable or function.
+
+        Examples
+        --------
+        >>> from symbolica import *
+        >>> x = S('x', tags=['a', 'b'])
+        >>> x_ = S('x_')
+        >>> e = x.replace(x_, 1, x_.req_tag('b'))
+        >>> print(e)
+
+        Yields `1`.
+        """
+
+    def req_attr(self, tag: SymbolAttribute) -> PatternRestriction:
+        """
+        Create a pattern restriction based on the attributes of a matched variable or function.
+
+        Examples
+        --------
+        >>> from symbolica import *
+        >>> x = S('f', is_linear=True)
+        >>> x_ = S('x_')
+        >>> print(E('f(x)').replace(E('x_(x)'), 1, ~S('x_').req_attr(SymbolAttribute.Linear)))
+        >>> print(e)
+
+        Yields `f(x)`.
+        """
+
     def req_type(self, atom_type: AtomType) -> PatternRestriction:
         """
         Create a pattern restriction that tests the type of the atom.
 
         Examples
         --------
-        >>> from symbolica import *, AtomType
+        >>> from symbolica import *
         >>> x, x_ = S('x', 'x_')
         >>> f = S('f')
         >>> e = f(x)*f(2)*f(f(3))
@@ -1336,7 +1679,7 @@ class Expression:
         """
 
     @overload
-    def to_polynomial(self, minimal_poly: Expression, vars: Optional[Sequence[Expression]] = None,
+    def to_polynomial(self, minimal_poly: Polynomial, vars: Optional[Sequence[Expression]] = None,
                       ) -> NumberFieldPolynomial:
         """Convert the expression to a polynomial, optionally, with the variables and the ordering specified in `vars`.
         All non-polynomial elements will be converted to new independent variables.
@@ -1349,14 +1692,14 @@ class Expression:
     def to_polynomial(self,
                       modulus: int,
                       power: Optional[Tuple[int, Expression]] = None,
-                      minimal_poly: Optional[Expression] = None,
+                      minimal_poly: Optional[Polynomial] = None,
                       vars: Optional[Sequence[Expression]] = None,
                       ) -> FiniteFieldPolynomial:
         """Convert the expression to a polynomial, optionally, with the variables and the ordering specified in `vars`.
         All non-polynomial elements will be converted to new independent variables.
 
         The coefficients will be converted to finite field elements modulo `modulus`.
-        If on top an `extension` is provided, for example `(2, a)`, the polynomial will be converted to the Galois field
+        If on top a `power` is provided, for example `(2, a)`, the polynomial will be converted to the Galois field
         `GF(modulus^2)` where `a` is the variable of the minimal polynomial of the field.
 
         If a `minimal_poly` is provided, the Galois field will be created with `minimal_poly` as the minimal polynomial.
@@ -1573,9 +1916,14 @@ class Expression:
         _cls,
         system: Sequence[Expression],
         variables: Sequence[Expression],
+        warn_if_underdetermined: bool = True,
     ) -> Sequence[Expression]:
         """Solve a linear system in the variables `variables`, where each expression
         in the system is understood to yield 0.
+
+        If the system is underdetermined, a partial solution is returned
+        where each bound variable is a linear combination of the free
+        variables. The free variables are chosen such that they have the highest index in the `vars` list.
 
         Examples
         --------
@@ -1722,6 +2070,7 @@ class Expression:
         verbose: bool = False,
         external_functions: Optional[dict[Tuple[Expression, str], Callable[[
             Sequence[float | complex]], float | complex]]] = None,
+        conditionals: Optional[Sequence[Expression]] = None,
     ) -> Evaluator:
         """Create an evaluator that can evaluate (nested) expressions in an optimized fashion.
         All constants and functions should be provided as dictionaries, where the function
@@ -1755,6 +2104,10 @@ class Expression:
         >>> E("f(x)").evaluator({}, {}, [S("x")], 
                     external_functions={(S("f"), "F"): lambda args: args[0]**2 + 1})
 
+        Define an conditional function which yields `x+1` when `y != 0` and `x+2` when `y == 0`:
+
+        >>> E("if(y, x + 1, x + 2)").evaluator({}, {}, [S("x"), S("y")], conditional=[S("if")])
+
         Parameters
         ----------
         constants: dict[Expression, Expression]
@@ -1769,11 +2122,14 @@ class Expression:
         n_cores: int, optional
             The number of cores to use for the optimization.
         verbose: bool, optional
-            If set to `True`, print the progress of the optimization.
+            Print the progress of the optimization.
         external_functions: Optional[dict[Tuple[Expression, str], Callable[[Sequence[float | complex]], float | complex]]]
             A dictionary of external functions that can be called during evaluation.
             The key is the function name and the value is a callable that takes a list of arguments and returns a float.
             This is useful for functions that are not defined in Symbolica but are available in Python.
+        conditionals: Optional[Sequence[Expression]], optional
+            A list of conditional functions. These functions should take three argument: a condition that is tested for
+            inequality with 0, the true branch and the false branch.
         """
 
     @classmethod
@@ -1802,7 +2158,7 @@ class Expression:
         """
 
     def canonize_tensors(self,
-                         contracted_indices: Sequence[Tuple[Expression | int, Expression | int]]) -> Expression:
+                         contracted_indices: Sequence[Tuple[Expression | int, Expression | int]]) -> Tuple[Expression, list[Tuple[Expression, Expression]], list[Tuple[Expression, Expression]]]:
         """Canonize (products of) tensors in the expression by relabeling repeated indices.
         The tensors must be written as functions, with its indices as the arguments.
         Subexpressions, constants and open indices are supported.
@@ -1812,13 +2168,17 @@ class Expression:
         specification.
         This makes sure that an index will not be renamed to an index from a different group.
 
+        Returns the canonical expression, as well as the external indices and ordered dummy indices
+        appearing in the canonical expression.
+
         Examples
         --------
         >>> g = S('g', is_symmetric=True)
         >>> fc = S('fc', is_cyclesymmetric=True)
         >>> mu1, mu2, mu3, mu4, k1 = S('mu1', 'mu2', 'mu3', 'mu4', 'k1')
         >>> e = g(mu2, mu3)*fc(mu4, mu2, k1, mu4, k1, mu3)
-        >>> print(e.canonize_tensors([(mu1, 0), (mu2, 0), (mu3, 0), (mu4, 0)]))
+        >>> (r, external, dummy) = e.canonize_tensors([(mu1, 0), (mu2, 0), (mu3, 0), (mu4, 0)])
+        >>> print(r)
 
         yields `g(mu1, mu2)*fc(mu1, mu3, mu2, k1, mu3, k1)`.
         """
@@ -2526,7 +2886,7 @@ class Transformer:
         """
 
     def conjugate(self) -> Transformer:
-        """Complex conjugate all complex numbers in the expression."""
+        """Complex conjugate the expression."""
 
     def coefficient(self, x: Expression) -> Transformer:
         """Create a transformer that collects terms involving the literal occurrence of `x`.
@@ -2635,7 +2995,7 @@ class Transformer:
         terms_on_new_line: bool = False,
         color_top_level_sum: bool = True,
         color_builtin_symbols: bool = True,
-        print_finite_field: bool = True,
+        print_ring: bool = True,
         symmetric_representation_for_finite_field: bool = False,
         explicit_rational_polynomial: bool = False,
         number_thousands_separator: Optional[str] = None,
@@ -2644,6 +3004,7 @@ class Transformer:
         square_brackets_for_function: bool = False,
         num_exp_as_superscript: bool = True,
         show_namespaces: bool = False,
+        include_attributes: bool = False,
         max_terms: Optional[int] = None,
         custom_print_mode: Optional[int] = None,
     ) -> Transformer:
@@ -2761,7 +3122,7 @@ class Series:
         terms_on_new_line: bool = False,
         color_top_level_sum: bool = True,
         color_builtin_symbols: bool = True,
-        print_finite_field: bool = True,
+        print_ring: bool = True,
         symmetric_representation_for_finite_field: bool = False,
         explicit_rational_polynomial: bool = False,
         number_thousands_separator: Optional[str] = None,
@@ -2771,6 +3132,7 @@ class Series:
         num_exp_as_superscript: bool = True,
         precision: Optional[int] = None,
         show_namespaces: bool = False,
+        include_attributes: bool = False,
         max_terms: Optional[int] = None,
         custom_print_mode: Optional[int] = None,
     ) -> str:
@@ -2982,7 +3344,7 @@ class Polynomial:
         terms_on_new_line: bool = False,
         color_top_level_sum: bool = True,
         color_builtin_symbols: bool = True,
-        print_finite_field: bool = True,
+        print_ring: bool = True,
         symmetric_representation_for_finite_field: bool = False,
         explicit_rational_polynomial: bool = False,
         number_thousands_separator: Optional[str] = None,
@@ -2992,6 +3354,7 @@ class Polynomial:
         num_exp_as_superscript: bool = True,
         precision: Optional[int] = None,
         show_namespaces: bool = False,
+        include_attributes: bool = False,
         max_terms: Optional[int] = None,
         custom_print_mode: Optional[int] = None,
     ) -> str:
@@ -3012,14 +3375,44 @@ class Polynomial:
     def get_variables(self) -> Sequence[Expression]:
         """Get the list of variables in the internal ordering of the polynomial."""
 
-    def __add__(self, rhs: Polynomial) -> Polynomial:
+    def __eq__(self, rhs: Polynomial | int) -> bool:
+        """Check if two polynomials are equal."""
+
+    def __ne__(self, rhs: Polynomial | int) -> bool:
+        """Check if two polynomials are not equal."""
+
+    def __lt__(self, rhs: int) -> bool:
+        """Check if the polynomial is less than an integer."""
+
+    def __le__(self, rhs: int) -> bool:
+        """Check if the polynomial is less than or equal to an integer."""
+
+    def __gt__(self, rhs: int) -> bool:
+        """Check if the polynomial is greater than an integer."""
+
+    def __ge__(self, rhs: int) -> bool:
+        """Check if the polynomial is greater than or equal to an integer."""
+
+    def __add__(self, rhs: Polynomial | int) -> Polynomial:
         """Add two polynomials `self` and `rhs`, returning the result."""
 
-    def __sub__(self, rhs: Polynomial) -> Polynomial:
+    def __sub__(self, rhs: Polynomial | int) -> Polynomial:
         """Subtract polynomials `rhs` from `self`, returning the result."""
 
-    def __mul__(self, rhs: Polynomial) -> Polynomial:
+    def __mul__(self, rhs: Polynomial | int) -> Polynomial:
         """Multiply two polynomials `self` and `rhs`, returning the result."""
+
+    def __radd__(self, rhs: Polynomial | int) -> Polynomial:
+        """Add two polynomials `self` and `rhs`, returning the result."""
+
+    def __rsub__(self, rhs: Polynomial | int) -> Polynomial:
+        """Subtract polynomials `self` from `rhs`, returning the result."""
+
+    def __rmul__(self, rhs: Polynomial | int) -> Polynomial:
+        """Multiply two polynomials `self` and `rhs`, returning the result."""
+
+    def __floordiv__(self, rhs: Polynomial) -> Polynomial:
+        """Divide the polynomial `self` by `rhs`, rounding down, returning the result."""
 
     def __truediv__(self, rhs: Polynomial) -> Polynomial:
         """Divide the polynomial `self` by `rhs` if possible, returning the result."""
@@ -3048,8 +3441,8 @@ class Polynomial:
     def reorder(self, vars: Sequence[Expression]) -> None:
         """Reorder the polynomial in-place to use the given variable order."""
 
-    def gcd(self, rhs: Polynomial) -> Polynomial:
-        """Compute the greatest common divisor (GCD) of two polynomials."""
+    def gcd(self, *rhs: Polynomial) -> Polynomial:
+        """Compute the greatest common divisor (GCD) of two or more polynomials."""
 
     def extended_gcd(self, rhs: Polynomial) -> Tuple[Polynomial, Polynomial, Polynomial]:
         """Compute the extended GCD of two polynomials, yielding the GCD and the Bezout coefficients `s` and `t`
@@ -3165,7 +3558,48 @@ class Polynomial:
         >>> print(p.content())
         """
 
-    def coefficient_list(self, xs: Optional[Expression | Sequence[Expression]]) -> list[Tuple[list[int], Polynomial]]:
+    def primitive(self) -> Polynomial:
+        """
+        Get the primitive part of the polynomial, i.e., the polynomial
+        with the content removed.
+
+        Examples
+        --------
+        >>> from symbolica import Expression as E
+        >>> p = E('6x^2+3x+9').to_polynomial()
+        >>> print(p.primitive())
+
+        Yields `2*x^2+x+3`.
+        """
+
+    def monic(self) -> Polynomial:
+        """
+        Get the monic part of the polynomial, i.e., the polynomial
+        divided by its leading coefficient.
+
+        Examples
+        --------
+        >>> from symbolica import Expression as E
+        >>> p = E('6x^2+3x+9').to_polynomial()
+        >>> print(p.monic())
+
+        Yields `x^2+1/2*x+2/3`.
+        """
+
+    def lcoeff(self) -> Polynomial:
+        """
+        Get the leading coefficient.
+
+        Examples
+        --------
+        >>> from symbolica import Expression as E
+        >>> p = E('3x^2+6x+9').to_polynomial().lcoeff()
+        >>> print(p)
+
+        Yields `3`.
+        """
+
+    def coefficient_list(self, xs: Optional[Expression | Sequence[Expression]] = None) -> list[Tuple[list[int], Polynomial]]:
         """Get the coefficient list, optionally in the variables `xs`.
 
         Examples
@@ -3226,7 +3660,31 @@ class Polynomial:
         >>> print((e - p.to_expression()).expand())
         """
 
-    def replace(self, x: Expression, v: Polynomial) -> Polynomial:
+    def evaluate(self, input: npt.ArrayLike) -> float:
+        """Evaluate the polynomial at point `input`.
+
+        Examples
+        --------
+
+        >>> from symbolica import *
+        >>> P('x*y+2*x+x^2').evaluate([2., 3.])
+
+        Yields `14.0`.
+        """
+
+    def evaluate_complex(self, input: npt.ArrayLike) -> complex:
+        """Evaluate the polynomial at point `input` with complex input.
+
+        Examples
+        --------
+
+        >>> from symbolica import *
+        >>> P('x*y+2*x+x^2').evaluate([2+1j, 3+2j])
+
+        Yields `11+13j`.
+        """
+
+    def replace(self, x: Expression, v: Polynomial | int) -> Polynomial:
         """Replace the variable `x` with a polynomial `v`.
 
         Examples
@@ -3254,6 +3712,53 @@ class Polynomial:
         yields `25-5*x+5*y^2-y^2*x-4*y^3+y^3*x`.
         """
 
+    def to_number_field(self, min_poly: Polynomial) -> NumberFieldPolynomial:
+        """Convert the coefficients of the polynomial to a number field defined by the minimal polynomial `min_poly`.
+
+        Examples
+        --------
+        >>> from symbolica import *
+        >>> a = P('a').to_number_field(P('a^2-2'))
+        >>> print(a * a)
+
+        Yields `2`.
+        """
+
+    def adjoin(self, min_poly: Polynomial, new_symbol: Optional[Expression] = None) -> tuple[Polynomial, Polynomial, Polynomial]:
+        """Adjoin the coefficient ring of this polynomial `R[a]` with `b`, whose minimal polynomial
+        is `R[a][b]` and form `R[b]`. Also return the new representation of `a` and `b`.
+
+        `b`  must be irreducible over `R` and `R[a]`; this is not checked.
+
+        If `new_symbol` is provided, the variable of the new extension will be renamed to it.
+        Otherwise, the variable of the new extension will be the same as that of `b`.
+
+        Examples
+        --------
+
+        >>> from symbolica import *
+        >>> sqrt2 = P('a^2-2')
+        >>> sqrt23 = P('b^2-a-3')
+        >>> (min_poly, rep2, rep23) = sqrt2.adjoin(sqrt23)
+        >>>
+        >>> # convert to number field
+        >>> a = P('a^2+b').replace(S('b'), rep23).replace(S('a'), rep2).to_number_field(min_poly)
+        """
+
+    def simplify_algebraic_number(self, min_poly: Polynomial) -> Polynomial:
+        """Find the minimal polynomial for the algebraic number represented by this polynomial
+        expressed in the number field defined by `minimal_poly`.
+
+        Examples
+        --------
+
+        >>> from symbolica import *
+        >>> (min_poly, rep2, rep23) = P('a^2-2').adjoin(P('b^2-3'))
+        >>> rep2.simplify_algebraic_number(min_poly)
+
+        Yields `b^2-2`.
+        """
+
 
 class NumberFieldPolynomial:
     """A Symbolica polynomial with rational coefficients."""
@@ -3273,7 +3778,7 @@ class NumberFieldPolynomial:
         terms_on_new_line: bool = False,
         color_top_level_sum: bool = True,
         color_builtin_symbols: bool = True,
-        print_finite_field: bool = True,
+        print_ring: bool = True,
         symmetric_representation_for_finite_field: bool = False,
         explicit_rational_polynomial: bool = False,
         number_thousands_separator: Optional[str] = None,
@@ -3283,6 +3788,7 @@ class NumberFieldPolynomial:
         num_exp_as_superscript: bool = True,
         precision: Optional[int] = None,
         show_namespaces: bool = False,
+        include_attributes: bool = False,
         max_terms: Optional[int] = None,
         custom_print_mode: Optional[int] = None,
     ) -> str:
@@ -3303,14 +3809,44 @@ class NumberFieldPolynomial:
     def get_variables(self) -> Sequence[Expression]:
         """Get the list of variables in the internal ordering of the polynomial."""
 
-    def __add__(self, rhs: NumberFieldPolynomial) -> NumberFieldPolynomial:
+    def __eq__(self, rhs: Polynomial | int) -> bool:
+        """Check if two polynomials are equal."""
+
+    def __ne__(self, rhs: Polynomial | int) -> bool:
+        """Check if two polynomials are not equal."""
+
+    def __lt__(self, rhs: int) -> bool:
+        """Check if the polynomial is less than an integer."""
+
+    def __le__(self, rhs: int) -> bool:
+        """Check if the polynomial is less than or equal to an integer."""
+
+    def __gt__(self, rhs: int) -> bool:
+        """Check if the polynomial is greater than an integer."""
+
+    def __ge__(self, rhs: int) -> bool:
+        """Check if the polynomial is greater than or equal to an integer."""
+
+    def __add__(self, rhs: NumberFieldPolynomial | int) -> NumberFieldPolynomial:
         """Add two polynomials `self` and `rhs`, returning the result."""
 
-    def __sub__(self, rhs: NumberFieldPolynomial) -> NumberFieldPolynomial:
+    def __sub__(self, rhs: NumberFieldPolynomial | int) -> NumberFieldPolynomial:
         """Subtract polynomials `rhs` from `self`, returning the result."""
 
-    def __mul__(self, rhs: NumberFieldPolynomial) -> NumberFieldPolynomial:
+    def __mul__(self, rhs: NumberFieldPolynomial | int) -> NumberFieldPolynomial:
         """Multiply two polynomials `self` and `rhs`, returning the result."""
+
+    def __radd__(self, rhs: NumberFieldPolynomial | int) -> NumberFieldPolynomial:
+        """Add two polynomials `self` and `rhs`, returning the result."""
+
+    def __rsub__(self, rhs: NumberFieldPolynomial | int) -> NumberFieldPolynomial:
+        """Subtract polynomials `self` from `rhs`, returning the result."""
+
+    def __rmul__(self, rhs: NumberFieldPolynomial | int) -> NumberFieldPolynomial:
+        """Multiply two polynomials `self` and `rhs`, returning the result."""
+
+    def __floordiv__(self, rhs: Polynomial) -> Polynomial:
+        """Divide the polynomial `self` by `rhs`, rounding down, returning the result."""
 
     def __truediv__(self, rhs: NumberFieldPolynomial) -> NumberFieldPolynomial:
         """Divide the polynomial `self` by `rhs` if possible, returning the result."""
@@ -3339,8 +3875,8 @@ class NumberFieldPolynomial:
     def reorder(self, vars: Sequence[Expression]) -> None:
         """Reorder the polynomial in-place to use the given variable order."""
 
-    def gcd(self, rhs: NumberFieldPolynomial) -> NumberFieldPolynomial:
-        """Compute the greatest common divisor (GCD) of two polynomials."""
+    def gcd(self, *rhs: NumberFieldPolynomial) -> NumberFieldPolynomial:
+        """Compute the greatest common divisor (GCD) of two or more polynomials."""
 
     def extended_gcd(self, rhs: NumberFieldPolynomial) -> Tuple[NumberFieldPolynomial, NumberFieldPolynomial, NumberFieldPolynomial]:
         """Compute the extended GCD of two polynomials, yielding the GCD and the Bezout coefficients `s` and `t`
@@ -3411,7 +3947,48 @@ class NumberFieldPolynomial:
         >>> print(p.content())
         """
 
-    def coefficient_list(self, xs: Optional[Expression | Sequence[Expression]]) -> list[Tuple[list[int], NumberFieldPolynomial]]:
+    def primitive(self) -> NumberFieldPolynomial:
+        """
+        Get the primitive part of the polynomial, i.e., the polynomial
+        with the content removed.
+
+        Examples
+        --------
+        >>> from symbolica import Expression as E
+        >>> p = E('3x^2+6x+9').to_polynomial()
+        >>> print(p.primitive())
+
+        Yields `x^2+2*x+3`.
+        """
+
+    def monic(self) -> NumberFieldPolynomial:
+        """
+        Get the monic part of the polynomial, i.e., the polynomial
+        divided by its leading coefficient.
+
+        Examples
+        --------
+        >>> from symbolica import Expression as E
+        >>> p = E('6x^2+3x+9').to_polynomial()
+        >>> print(p.monic())
+
+        Yields `x^2+1/2*x+2/3`.
+        """
+
+    def lcoeff(self) -> NumberFieldPolynomial:
+        """
+        Get the leading coefficient.
+
+        Examples
+        --------
+        >>> from symbolica import Expression as E
+        >>> p = E('3x^2+6x+9').to_polynomial().lcoeff()
+        >>> print(p)
+
+        Yields `3`.
+        """
+
+    def coefficient_list(self, xs: Optional[Expression | Sequence[Expression]] = None) -> list[Tuple[list[int], NumberFieldPolynomial]]:
         """Get the coefficient list, optionally in the variables `xs`.
 
         Examples
@@ -3459,7 +4036,7 @@ class NumberFieldPolynomial:
         >>> print((e - p.to_expression()).expand())
         """
 
-    def replace(self, x: Expression, v: NumberFieldPolynomial) -> NumberFieldPolynomial:
+    def replace(self, x: Expression, v: NumberFieldPolynomial | int) -> NumberFieldPolynomial:
         """Replace the variable `x` with a polynomial `v`.
 
         Examples
@@ -3475,11 +4052,8 @@ class NumberFieldPolynomial:
     def get_minimal_polynomial(self) -> Polynomial:
         """Get the minimal polynomial of the algebraic extension."""
 
-    def extend(self, b: NumberFieldPolynomial) -> Tuple[NumberFieldPolynomial, Polynomial, Polynomial]:
-        """Extend the coefficient ring of this polynomial `R[a]` with `b`, whose minimal polynomial
-        is `R[a][b]` and form `R[b]`. Also return the new representation of `a` and `b`.
-
-        `b`  must be irreducible over `R` and `R[a]`; this is not checked."""
+    def to_polynomial(self) -> Polynomial:
+        """Convert the number field polynomial to a rational polynomial."""
 
 
 class FiniteFieldPolynomial:
@@ -3520,7 +4094,7 @@ class FiniteFieldPolynomial:
         terms_on_new_line: bool = False,
         color_top_level_sum: bool = True,
         color_builtin_symbols: bool = True,
-        print_finite_field: bool = True,
+        print_ring: bool = True,
         symmetric_representation_for_finite_field: bool = False,
         explicit_rational_polynomial: bool = False,
         number_thousands_separator: Optional[str] = None,
@@ -3530,6 +4104,7 @@ class FiniteFieldPolynomial:
         num_exp_as_superscript: bool = True,
         precision: Optional[int] = None,
         show_namespaces: bool = False,
+        include_attributes: bool = False,
         max_terms: Optional[int] = None,
         custom_print_mode: Optional[int] = None,
     ) -> str:
@@ -3550,14 +4125,32 @@ class FiniteFieldPolynomial:
     def get_variables(self) -> Sequence[Expression]:
         """Get the list of variables in the internal ordering of the polynomial."""
 
-    def __add__(self, rhs: FiniteFieldPolynomial) -> FiniteFieldPolynomial:
+    def __eq__(self, rhs: Polynomial | int) -> bool:
+        """Check if two polynomials are equal."""
+
+    def __ne__(self, rhs: Polynomial | int) -> bool:
+        """Check if two polynomials are not equal."""
+
+    def __add__(self, rhs: FiniteFieldPolynomial | int) -> FiniteFieldPolynomial:
         """Add two polynomials `self` and `rhs`, returning the result."""
 
-    def __sub__(self, rhs: FiniteFieldPolynomial) -> FiniteFieldPolynomial:
+    def __sub__(self, rhs: FiniteFieldPolynomial | int) -> FiniteFieldPolynomial:
         """Subtract polynomials `rhs` from `self`, returning the result."""
 
-    def __mul__(self, rhs: FiniteFieldPolynomial) -> FiniteFieldPolynomial:
+    def __mul__(self, rhs: FiniteFieldPolynomial | int) -> FiniteFieldPolynomial:
         """Multiply two polynomials `self` and `rhs`, returning the result."""
+
+    def __radd__(self, rhs: FiniteFieldPolynomial | int) -> FiniteFieldPolynomial:
+        """Add two polynomials `self` and `rhs`, returning the result."""
+
+    def __rsub__(self, rhs: FiniteFieldPolynomial | int) -> FiniteFieldPolynomial:
+        """Subtract polynomials `self` from `rhs`, returning the result."""
+
+    def __rmul__(self, rhs: FiniteFieldPolynomial | int) -> FiniteFieldPolynomial:
+        """Multiply two polynomials `self` and `rhs`, returning the result."""
+
+    def __floordiv__(self, rhs: Polynomial) -> Polynomial:
+        """Divide the polynomial `self` by `rhs`, rounding down, returning the result."""
 
     def __truediv__(self, rhs: FiniteFieldPolynomial) -> FiniteFieldPolynomial:
         """Divide the polynomial `self` by `rhs` if possible, returning the result."""
@@ -3586,8 +4179,8 @@ class FiniteFieldPolynomial:
     def reorder(self, vars: Sequence[Expression]) -> None:
         """Reorder the polynomial in-place to use the given variable order."""
 
-    def gcd(self, rhs: FiniteFieldPolynomial) -> FiniteFieldPolynomial:
-        """Compute the greatest common divisor (GCD) of two polynomials."""
+    def gcd(self, *rhs: FiniteFieldPolynomial) -> FiniteFieldPolynomial:
+        """Compute the greatest common divisor (GCD) of two or more polynomials."""
 
     def extended_gcd(self, rhs: FiniteFieldPolynomial) -> Tuple[FiniteFieldPolynomial, FiniteFieldPolynomial, FiniteFieldPolynomial]:
         """Compute the extended GCD of two polynomials, yielding the GCD and the Bezout coefficients `s` and `t`
@@ -3624,8 +4217,6 @@ class FiniteFieldPolynomial:
     def factor(self) -> list[Tuple[FiniteFieldPolynomial, int]]:
         """Factorize the polynomial.
 
-        The polynomial must be univariate.
-
         Examples
         --------
 
@@ -3660,18 +4251,34 @@ class FiniteFieldPolynomial:
         >>> print(p.integrate(x))
         """
 
-    def content(self) -> FiniteFieldPolynomial:
-        """Get the content, i.e., the GCD of the coefficients.
+    def monic(self) -> FiniteFieldPolynomial:
+        """
+        Get the monic part of the polynomial, i.e., the polynomial
+        divided by its leading coefficient.
 
         Examples
         --------
+        >>> from symbolica import Expression as E
+        >>> p = E('6x^2+3x+9').to_polynomial()
+        >>> print(p.monic())
 
-        >>> from symbolica import *
-        >>> p = E('3x^2+6x+9').to_polynomial()
-        >>> print(p.content())
+        Yields `x^2+1/2*x+3/2`.
         """
 
-    def coefficient_list(self, xs: Optional[Expression | Sequence[Expression]]) -> list[Tuple[list[int], FiniteFieldPolynomial]]:
+    def lcoeff(self) -> FiniteFieldPolynomial:
+        """
+        Get the leading coefficient.
+
+        Examples
+        --------
+        >>> from symbolica import Expression as E
+        >>> p = E('3x^2+6x+9').to_polynomial().lcoeff()
+        >>> print(p)
+
+        Yields `3`.
+        """
+
+    def coefficient_list(self, xs: Optional[Expression | Sequence[Expression]] = None) -> list[Tuple[list[int], FiniteFieldPolynomial]]:
         """Get the coefficient list, optionally in the variables `xs`.
 
         Examples
@@ -3722,7 +4329,19 @@ class FiniteFieldPolynomial:
         yields `y^2`
         """
 
-    def replace(self, x: Expression, v: Polynomial) -> Polynomial:
+    def evaluate(self, input: Sequence[int]) -> int:
+        """Evaluate the polynomial at point `input`.
+
+        Examples
+        --------
+
+        >>> from symbolica import *
+        >>> P('x*y+2*x+x^2', modulus=5).evaluate([2, 3])
+
+        Yields `4`.
+        """
+
+    def replace(self, x: Expression, v: FiniteFieldPolynomial | int) -> FiniteFieldPolynomial:
         """Replace the variable `x` with a polynomial `v`.
 
         Examples
@@ -3736,6 +4355,33 @@ class FiniteFieldPolynomial:
 
     def to_expression(self) -> Expression:
         """ Convert the polynomial to an expression."""
+
+    def to_polynomial(self) -> Polynomial:
+        """Convert a Galois field polynomial to a simple finite field polynomial."""
+
+    def to_galois_field(self, min_poly: FiniteFieldPolynomial) -> FiniteFieldPolynomial:
+        """Convert the coefficients of the polynomial to a Galois field defined by the minimal polynomial `min_poly`."""
+
+    def get_minimal_polynomial(self) -> FiniteFieldPolynomial:
+        """Get the minimal polynomial of the algebraic extension."""
+
+    def get_modulus(self) -> int:
+        """Get the modulus of the finite field."""
+
+    def adjoin(self, b: FiniteFieldPolynomial, new_symbol: Optional[Expression] = None) -> Tuple[FiniteFieldPolynomial, FiniteFieldPolynomial, FiniteFieldPolynomial]:
+        """Adjoin the coefficient ring of this polynomial `R[a]` with `b`, whose minimal polynomial
+        is `R[a][b]` and form `R[b]`. Also return the new representation of `a` and `b`.
+
+        `b`  must be irreducible over `R` and `R[a]`; this is not checked.
+
+        If `new_symbol` is provided, the variable of the new extension will be renamed to it.
+        Otherwise, the variable of the new extension will be the same as that of `b`.
+        """
+
+    def simplify_algebraic_number(self, min_poly: FiniteFieldPolynomial) -> FiniteFieldPolynomial:
+        """Find the minimal polynomial for the algebraic number represented by this polynomial
+        expressed in the number field defined by `minimal_poly`.
+        """
 
 
 class RationalPolynomial:
@@ -3780,6 +4426,24 @@ class RationalPolynomial:
     def denominator(self) -> Polynomial:
         """Get the denominator."""
 
+    def __eq__(self, rhs: Polynomial | int) -> bool:
+        """Check if two rational polynomials are equal."""
+
+    def __ne__(self, rhs: Polynomial | int) -> bool:
+        """Check if two rational polynomials are not equal."""
+
+    def __lt__(self, rhs: int) -> bool:
+        """Check if the rational polynomial is less than an integer."""
+
+    def __le__(self, rhs: int) -> bool:
+        """Check if the rational polynomial is less than or equal to an integer."""
+
+    def __gt__(self, rhs: int) -> bool:
+        """Check if the rational polynomial is greater than an integer."""
+
+    def __ge__(self, rhs: int) -> bool:
+        """Check if the polynomial is greater than or equal to an integer."""
+
     def __add__(self, rhs: RationalPolynomial) -> RationalPolynomial:
         """Add two rational polynomials `self` and `rhs`, returning the result."""
 
@@ -3788,6 +4452,9 @@ class RationalPolynomial:
 
     def __mul__(self, rhs: RationalPolynomial) -> RationalPolynomial:
         """Multiply two rational polynomials `self` and `rhs`, returning the result."""
+
+    def __floordiv__(self, rhs: Polynomial) -> Polynomial:
+        """Divide the polynomial `self` by `rhs`, rounding down, returning the result."""
 
     def __truediv__(self, rhs: RationalPolynomial) -> RationalPolynomial:
         """Divide the rational polynomial `self` by `rhs` if possible, returning the result."""
@@ -3866,6 +4533,12 @@ class FiniteFieldRationalPolynomial:
             If the input is not a valid Symbolica rational polynomial.
         """
 
+    def __eq__(self, rhs: Polynomial | int) -> bool:
+        """Check if two polynomials are equal."""
+
+    def __ne__(self, rhs: Polynomial | int) -> bool:
+        """Check if two polynomials are not equal."""
+
     def __copy__(self) -> FiniteFieldRationalPolynomial:
         """Copy the rational polynomial."""
 
@@ -3895,6 +4568,9 @@ class FiniteFieldRationalPolynomial:
 
     def gcd(self, rhs: FiniteFieldRationalPolynomial) -> FiniteFieldRationalPolynomial:
         """Compute the greatest common divisor (GCD) of two rational polynomials."""
+
+    def get_modulus(self) -> int:
+        """Get the modulus of the finite field."""
 
     def derivative(self, x: Expression) -> RationalPolynomial:
         """Take a derivative in `x`.
@@ -4012,6 +4688,7 @@ class Matrix:
         num_exp_as_superscript: bool = True,
         precision: Optional[int] = None,
         show_namespaces: bool = False,
+        include_attributes: bool = False,
         max_terms: Optional[int] = None,
         custom_print_mode: Optional[int] = None,
     ) -> str:
@@ -4082,6 +4759,11 @@ class Evaluator:
         - `('pow', ('out', 0), ('param', 0), -1)` which means `out[0] = param[0]^-1`.
         - `('powf', ('out', 0), ('param', 0), ('param', 1))` which means `out[0] = param[0]^param[1]`.
         - `('fun', ('temp', 1), cos, ('param', 0))` which means `temp[1] = cos(param[0])`.
+        - `('external_fun', ('temp', 1), f, [('param', 0)])` which means `temp[1] = f(param[0])`.
+        - `('if_else', ('temp', 0), 5)` which means `if temp[0] != 0 goto label 5`.
+        - `('goto', 10)` which means `goto label 10`.
+        - `('label', 3)` which means `label 3`.
+        - `('join', ('out', 0), ('temp', 0), 3, 7)` which means `out[0] = (temp[0] != 0) ? label 3 : label 7`.
 
         Examples
         --------
@@ -4105,6 +4787,26 @@ class Evaluator:
         ```
         """
 
+    def merge(self, other: Evaluator, cpe_rounds: Optional[int] = None) -> Evaluator:
+        """
+        Merge evaluator `other` into `self`. The parameters must be the same, and
+        the outputs will be concatenated.
+
+        The optional `cpe_rounds` parameter can be used to limit the number of common
+        pair elimination rounds after the merge.
+
+        Examples
+        --------
+
+        >>> from symbolica import *
+        >>> e1 = E('x').evaluator({}, {}, [S('x')])
+        >>> e2 = E('x+1').evaluator({}, {}, [S('x')])
+        >>> e = e1.merge(e2)
+        >>> e.evaluate([2])
+
+        yields `[2, 3]`.
+        """
+
     @overload
     def compile(
         self,
@@ -4114,6 +4816,7 @@ class Evaluator:
         number_type: Literal['real'],
         inline_asm: str = 'default',
         optimization_level: int = 3,
+        native: bool = True,
         compiler_path: Optional[str] = None,
         compiler_flags: Optional[Sequence[str]] = None,
         custom_header: Optional[str] = None,
@@ -4128,13 +4831,16 @@ class Evaluator:
             The name of the file to generate.
         library_name : str
             The name of the shared library to generate.
-        number_type : Literal['real'] | Literal['complex'] | Literal['cuda_real'] | Literal['cuda_complex']
+        number_type : Literal['real'] | Literal['complex'] | Literal['real_4x'] | Literal['complex_4x'] | Literal['cuda_real'] | Literal['cuda_complex']
             The type of numbers to use. Can be 'real' for double or 'complex' for complex double.
+            For 4x SIMD runs, use 'real_4x' or 'complex_4x'.
             For GPU runs with CUDA, use 'cuda_real' or 'cuda_complex'.
         inline_asm : str
-            The inline ASM option can be set to 'default', 'x64', 'aarch64' or 'none'.
+            The inline ASM option can be set to 'default', 'x64', 'avx2', 'aarch64' or 'none'.
         optimization_level : int
             The optimization level to use for the compiler. This can be set to 0, 1, 2 or 3.
+        native: bool
+            If `True`, compile for the native architecture. This may produce faster code, but is less portable.
         compiler_path : Optional[str]
             The custom path to the compiler executable.
         compiler_flags : Optional[Sequence[str]]
@@ -4152,6 +4858,7 @@ class Evaluator:
         number_type: Literal['complex'],
         inline_asm: str = 'default',
         optimization_level: int = 3,
+        native: bool = True,
         compiler_path: Optional[str] = None,
         compiler_flags: Optional[Sequence[str]] = None,
         custom_header: Optional[str] = None,
@@ -4166,13 +4873,100 @@ class Evaluator:
             The name of the file to generate.
         library_name : str
             The name of the shared library to generate.
-        number_type : Literal['real'] | Literal['complex'] | Literal['cuda_real'] | Literal['cuda_complex']
+        number_type : Literal['real'] | Literal['complex'] | Literal['real_4x'] | Literal['complex_4x'] | Literal['cuda_real'] | Literal['cuda_complex']
             The type of numbers to use. Can be 'real' for double or 'complex' for complex double.
+            For 4x SIMD runs, use 'real_4x' or 'complex_4x'.
             For GPU runs with CUDA, use 'cuda_real' or 'cuda_complex'.
         inline_asm : str
-            The inline ASM option can be set to 'default', 'x64', 'aarch64' or 'none'.
+            The inline ASM option can be set to 'default', 'x64', 'avx2', 'aarch64' or 'none'.
         optimization_level : int
             The optimization level to use for the compiler. This can be set to 0, 1, 2 or 3.
+        native: bool
+            If `True`, compile for the native architecture. This may produce faster code, but is less portable.
+        compiler_path : Optional[str]
+            The custom path to the compiler executable.
+        compiler_flags : Optional[Sequence[str]]
+            The custom flags to pass to the compiler.
+        custom_header : Optional[str]
+            The custom header to include in the generated code.
+        """
+
+    @overload
+    def compile(
+        self,
+        function_name: str,
+        filename: str,
+        library_name: str,
+        number_type: Literal['real_4x'],
+        inline_asm: str = 'default',
+        optimization_level: int = 3,
+        native: bool = True,
+        compiler_path: Optional[str] = None,
+        compiler_flags: Optional[Sequence[str]] = None,
+        custom_header: Optional[str] = None,
+    ) -> CompiledSimdRealEvaluator:
+        """Compile the evaluator to a shared library with 4x SIMD using C++ and optionally inline assembly and load it.
+
+        Parameters
+        ----------
+        function_name : str
+            The name of the function to generate and compile.
+        filename : str
+            The name of the file to generate.
+        library_name : str
+            The name of the shared library to generate.
+        number_type : Literal['real'] | Literal['complex'] | Literal['real_4x'] | Literal['complex_4x'] | Literal['cuda_real'] | Literal['cuda_complex']
+            The type of numbers to use. Can be 'real' for double or 'complex' for complex double.
+            For 4x SIMD runs, use 'real_4x' or 'complex_4x'.
+            For GPU runs with CUDA, use 'cuda_real' or 'cuda_complex'.
+        inline_asm : str
+            The inline ASM option can be set to 'default', 'x64', 'avx2', 'aarch64' or 'none'.
+        optimization_level : int
+            The optimization level to use for the compiler. This can be set to 0, 1, 2 or 3.
+        native: bool
+            If `True`, compile for the native architecture. This may produce faster code, but is less portable.
+        compiler_path : Optional[str]
+            The custom path to the compiler executable.
+        compiler_flags : Optional[Sequence[str]]
+            The custom flags to pass to the compiler.
+        custom_header : Optional[str]
+            The custom header to include in the generated code.
+        """
+
+    @overload
+    def compile(
+        self,
+        function_name: str,
+        filename: str,
+        library_name: str,
+        number_type: Literal['complex_4x'],
+        inline_asm: str = 'default',
+        optimization_level: int = 3,
+        native: bool = True,
+        compiler_path: Optional[str] = None,
+        compiler_flags: Optional[Sequence[str]] = None,
+        custom_header: Optional[str] = None,
+    ) -> CompiledSimdComplexEvaluator:
+        """Compile the evaluator to a shared library with 4x SIMD using C++ and optionally inline assembly and load it.
+
+        Parameters
+        ----------
+        function_name : str
+            The name of the function to generate and compile.
+        filename : str
+            The name of the file to generate.
+        library_name : str
+            The name of the shared library to generate.
+        number_type : Literal['real'] | Literal['complex'] | Literal['real_4x'] | Literal['complex_4x'] | Literal['cuda_real'] | Literal['cuda_complex']
+            The type of numbers to use. Can be 'real' for double or 'complex' for complex double.
+            For 4x SIMD runs, use 'real_4x' or 'complex_4x'.
+            For GPU runs with CUDA, use 'cuda_real' or 'cuda_complex'.
+        inline_asm : str
+            The inline ASM option can be set to 'default', 'x64', 'avx2', 'aarch64' or 'none'.
+        optimization_level : int
+            The optimization level to use for the compiler. This can be set to 0, 1, 2 or 3.
+        native: bool
+            If `True`, compile for the native architecture. This may produce faster code, but is less portable.
         compiler_path : Optional[str]
             The custom path to the compiler executable.
         compiler_flags : Optional[Sequence[str]]
@@ -4190,6 +4984,7 @@ class Evaluator:
         number_type: Literal['cuda_real'],
         inline_asm: str = 'default',
         optimization_level: int = 3,
+        native: bool = True,
         compiler_path: Optional[str] = None,
         compiler_flags: Optional[Sequence[str]] = None,
         custom_header: Optional[str] = None,
@@ -4209,13 +5004,16 @@ class Evaluator:
             The name of the file to generate.
         library_name : str
             The name of the shared library to generate.
-        number_type : Literal['real'] | Literal['complex'] | Literal['cuda_real'] | Literal['cuda_complex']
+        number_type : Literal['real'] | Literal['complex'] | Literal['real_4x'] | Literal['complex_4x'] | Literal['cuda_real'] | Literal['cuda_complex']
             The type of numbers to use. Can be 'real' for double or 'complex' for complex double.
+            For 4x SIMD runs, use 'real_4x' or 'complex_4x'.
             For GPU runs with CUDA, use 'cuda_real' or 'cuda_complex'.
         inline_asm : str
-            The inline ASM option can be set to 'default', 'x64', 'aarch64' or 'none'.
+            The inline ASM option can be set to 'default', 'x64', 'avx2', 'aarch64' or 'none'.
         optimization_level : int
             The optimization level to use for the compiler. This can be set to 0, 1, 2 or 3.
+        native: bool
+            If `True`, compile for the native architecture. This may produce faster code, but is less portable.
         compiler_path : Optional[str]
             The custom path to the compiler executable.
         compiler_flags : Optional[Sequence[str]]
@@ -4238,6 +5036,7 @@ class Evaluator:
         number_type: Literal['cuda_complex'],
         inline_asm: str = 'default',
         optimization_level: int = 3,
+        native: bool = True,
         compiler_path: Optional[str] = None,
         compiler_flags: Optional[Sequence[str]] = None,
         custom_header: Optional[str] = None,
@@ -4257,13 +5056,16 @@ class Evaluator:
             The name of the file to generate.
         library_name : str
             The name of the shared library to generate.
-        number_type : Literal['real'] | Literal['complex'] | Literal['cuda_real'] | Literal['cuda_complex']
+        number_type :  Literal['real'] | Literal['complex'] | Literal['real_4x'] | Literal['complex_4x'] | Literal['cuda_real'] | Literal['cuda_complex']
             The type of numbers to use. Can be 'real' for double or 'complex' for complex double.
+            For 4x SIMD runs, use 'real_4x' or 'complex_4x'.
             For GPU runs with CUDA, use 'cuda_real' or 'cuda_complex'.
         inline_asm : str
-            The inline ASM option can be set to 'default', 'x64', 'aarch64' or 'none'.
+            The inline ASM option can be set to 'default', 'x64', 'avx2', 'aarch64' or 'none'.
         optimization_level : int
             The optimization level to use for the compiler. This can be set to 0, 1, 2 or 3.
+        native: bool
+            If `True`, compile for the native architecture. This may produce faster code, but is less portable.
         compiler_path : Optional[str]
             The custom path to the compiler executable.
         compiler_flags : Optional[Sequence[str]]
@@ -4277,24 +5079,42 @@ class Evaluator:
             The block size to use for CUDA kernel launches.
         """
 
-    def evaluate(self, inputs: Sequence[Sequence[float]]) -> List[List[float]]:
-        """Evaluate the expression for multiple inputs and return the result."""
+    def evaluate(self, inputs: npt.ArrayLike) -> npt.NDArray[np.float64]:
+        """Evaluate the expression for multiple inputs and return the result.
+        For best performance, use `numpy` arrays instead of lists.
 
-    def evaluate_flat(self, inputs: Sequence[float]) -> List[float]:
-        """Evaluate the expression for multiple inputs that are flattened and return the flattened result.
-        This method has less overhead than `evaluate`."""
+        Examples
+        --------
+        Evaluate the function for three sets of inputs:
 
-    def evaluate_complex(self, inputs: Sequence[Sequence[complex]]) -> List[List[complex]]:
-        """Evaluate the expression for multiple inputs and return the result."""
+        >>> from symbolica import *
+        >>> import numpy as np
+        >>> ev = E('x * y + 2').evaluator({}, {}, [S('x'), S('y')])
+        >>> print(ev.evaluate(np.array([1., 2., 3., 4., 5., 6.]).reshape((3, 2))))
 
-    def evaluate_complex_flat(self, inputs: Sequence[complex]) -> List[complex]:
-        """Evaluate the expression for multiple inputs that are flattened and return the flattened result.
-        This method has less overhead than `evaluate_complex`."""
+        Yields`[[ 4.] [ 8.] [14.]]` 
+        """
+
+    def evaluate_complex(self, inputs: npt.ArrayLike) -> npt.NDArray[np.complex128]:
+        """Evaluate the expression for multiple inputs and return the result.
+        For best performance, use `numpy` arrays and `np.complex128` instead of lists and
+        `complex`.
+
+        Examples
+        --------
+        Evaluate the function for three sets of inputs:
+
+        >>> from symbolica import *
+        >>> import numpy as np
+        >>> ev = E('x * y + 2').evaluator({}, {}, [S('x'), S('y')])
+        >>> print(ev.evaluate(np.array([1.+2j, 2., 3., 4., 5., 6.]).reshape((3, 2))))
+
+        Yields`[[ 4.+4.j] [14.+0.j] [32.+0.j]]` 
+        """
 
 
 class CompiledRealEvaluator:
-    """An compiled evaluator of an expression. This will give the highest performance of
-    all evaluators."""
+    """A compiled evaluator of an expression."""
 
     @classmethod
     def load(
@@ -4306,17 +5126,12 @@ class CompiledRealEvaluator:
     ) -> CompiledRealEvaluator:
         """Load a compiled library, previously generated with `Evaluator.compile()`."""
 
-    def evaluate(self, inputs: Sequence[Sequence[float]]) -> List[List[float]]:
+    def evaluate(self, inputs: npt.ArrayLike) -> npt.NDArray[np.float64]:
         """Evaluate the expression for multiple inputs and return the result."""
-
-    def evaluate_flat(self, inputs: Sequence[float]) -> List[float]:
-        """Evaluate the expression for multiple inputs that are flattened and return the flattened result.
-        This method has less overhead than `evaluate`."""
 
 
 class CompiledComplexEvaluator:
-    """An compiled evaluator of an expression. This will give the highest performance of
-    all evaluators."""
+    """A compiled evaluator of an expression."""
 
     @classmethod
     def load(
@@ -4328,17 +5143,46 @@ class CompiledComplexEvaluator:
     ) -> CompiledComplexEvaluator:
         """Load a compiled library, previously generated with `Evaluator.compile()`."""
 
-    def evaluate(self, inputs: Sequence[Sequence[complex]]) -> List[List[complex]]:
+    def evaluate(self, inputs: npt.ArrayLike) -> npt.NDArray[np.complex128]:
         """Evaluate the expression for multiple inputs and return the result."""
 
-    def evaluate_flat(self, inputs: Sequence[complex]) -> List[complex]:
-        """Evaluate the expression for multiple inputs that are flattened and return the flattened result.
-        This method has less overhead than `evaluate`."""
+
+class CompiledSimdRealEvaluator:
+    """A compiled evaluator of an expression that packs 4 double using SIMD."""
+
+    @classmethod
+    def load(
+        _cls,
+        filename: str,
+        function_name: str,
+        input_len: int,
+        output_len: int,
+    ) -> CompiledSimdRealEvaluator:
+        """Load a compiled library, previously generated with `Evaluator.compile()`."""
+
+    def evaluate(self, inputs: npt.ArrayLike) -> npt.NDArray[np.float64]:
+        """Evaluate the expression for multiple inputs and return the result."""
+
+
+class CompiledSimdComplexEvaluator:
+    """A compiled evaluator of an expression that packs 4 double using SIMD."""
+
+    @classmethod
+    def load(
+        _cls,
+        filename: str,
+        function_name: str,
+        input_len: int,
+        output_len: int,
+    ) -> CompiledSimdComplexEvaluator:
+        """Load a compiled library, previously generated with `Evaluator.compile()`."""
+
+    def evaluate(self, inputs: npt.ArrayLike) -> npt.NDArray[np.complex128]:
+        """Evaluate the expression for multiple inputs and return the result."""
 
 
 class CompiledCudaRealEvaluator:
-    """An compiled evaluator of an expression. This will give the highest performance of
-    all evaluators."""
+    """A compiled evaluator of an expression that uses CUDA for GPU acceleration."""
 
     @classmethod
     def load(
@@ -4352,17 +5196,12 @@ class CompiledCudaRealEvaluator:
     ) -> CompiledCudaRealEvaluator:
         """Load a compiled library, previously generated with `Evaluator.compile()`."""
 
-    def evaluate(self, inputs: Sequence[Sequence[float]]) -> List[List[float]]:
+    def evaluate(self, inputs: npt.ArrayLike) -> npt.NDArray[np.float64]:
         """Evaluate the expression for multiple inputs and return the result."""
-
-    def evaluate_flat(self, inputs: Sequence[float]) -> List[float]:
-        """Evaluate the expression for multiple inputs that are flattened and return the flattened result.
-        This method has less overhead than `evaluate`."""
 
 
 class CompiledCudaComplexEvaluator:
-    """An compiled evaluator of an expression. This will give the highest performance of
-    all evaluators."""
+    """A compiled evaluator of an expression that uses CUDA for GPU acceleration."""
 
     @classmethod
     def load(
@@ -4376,16 +5215,15 @@ class CompiledCudaComplexEvaluator:
     ) -> CompiledCudaComplexEvaluator:
         """Load a compiled library, previously generated with `Evaluator.compile()`."""
 
-    def evaluate(self, inputs: Sequence[Sequence[complex]]) -> List[List[complex]]:
+    def evaluate(self, inputs: npt.ArrayLike) -> npt.NDArray[np.complex128]:
         """Evaluate the expression for multiple inputs and return the result."""
-
-    def evaluate_flat(self, inputs: Sequence[complex]) -> List[complex]:
-        """Evaluate the expression for multiple inputs that are flattened and return the flattened result.
-        This method has less overhead than `evaluate`."""
 
 
 class NumericalIntegrator:
     """A numerical integrator for high-dimensional integrals."""
+
+    def __copy__(self) -> NumericalIntegrator:
+        """Copy the grid without any unprocessed samples."""
 
     @classmethod
     def continuous(
@@ -4422,6 +5260,33 @@ class NumericalIntegrator:
         >>> integrator = NumericalIntegrator.discrete(
         >>>     [NumericalIntegrator.continuous(1), NumericalIntegrator.continuous(1)])
         >>> integrator.integrate(integrand, True, 10, 10000)
+        """
+
+    @classmethod
+    def uniform(
+        _cls,
+        bins: Sequence[int],
+        continuous_subgrid: NumericalIntegrator,
+    ) -> NumericalIntegrator:
+        """Create a new uniform layered grid for the numerical integrator.
+        `len(bins)` specifies the number of discrete layers, and each entry in `bins` specifies the number of bins in that layer.
+        Each discrete bin has equal probability.
+
+        Examples
+        --------
+        >>> def integrand(samples: typing.Sequence[Sample]) -> list[float]:
+        >>>     res = []
+        >>>     for sample in samples:
+        >>>         if sample.d[0] == 0:
+        >>>             res.append(sample.c[0]**2)
+        >>>         else:
+        >>>             res.append(sample.c[0]**3)
+        >>>     return res
+        >>>
+        >>>
+        >>> integrator = NumericalIntegrator.uniform(
+        >>>     [2], NumericalIntegrator.continuous(1))
+        >>> integrator.integrate(integrand, min_error=1e-3)
         """
 
     @classmethod
@@ -4545,6 +5410,24 @@ class RandomNumberGenerator:
         each thread or instance generating samples should use the same `seed` but a different `stream_id`."""
 
 
+class HalfEdge:
+    """A half-edge in a graph that connects to one vertex, consisting of a direction (or `None` if undirected) and edge data."""
+
+    def __new__(_cls, data: Expression | int, direction: Optional[bool] = None):
+        """Create a new half-edge. The `data` can be any expression, and the `direction` can be `True` (outgoing),
+        `False` (incoming) or `None` (undirected).
+        """
+
+    def flip(self) -> HalfEdge:
+        """Return a new half-edge with the direction flipped (if it has a direction)."""
+
+    def direction(self) -> Optional[bool]:
+        """Get the direction of the half-edge. `True` means outgoing, `False` means incoming, and `None` means undirected."""
+
+    def data(self) -> Expression:
+        """Get the data of the half-edge."""
+
+
 class Graph:
     """A graph that supported directional edges, parallel edges, self-edges and expression data on the nodes and edges.
 
@@ -4577,14 +5460,15 @@ class Graph:
 
     @classmethod
     def generate(_cls,
-                 external_nodes: Sequence[tuple[Expression | int, Tuple[Optional[bool], Expression | int]]],
-                 vertex_signatures: Sequence[Sequence[Tuple[Optional[bool], Expression | int]]],
+                 external_nodes: Sequence[tuple[Expression | int, HalfEdge]],
+                 vertex_signatures: Sequence[Sequence[HalfEdge]],
                  max_vertices: Optional[int] = None,
                  max_loops: Optional[int] = None,
                  max_bridges: Optional[int] = None,
                  allow_self_loops: bool = False,
                  allow_zero_flow_edges: bool = False,
-                 filter_fn: Optional[Callable[[Graph, int], bool]] = None) -> dict[Graph, Expression]:
+                 filter_fn: Optional[Callable[[Graph, int], bool]] = None,
+                 progress_fn: Optional[Callable[[Graph], bool]] = None) -> dict[Graph, Expression]:
         """Generate all connected graphs with `external_edges` half-edges and the given allowed list
         of vertex connections. The vertex signatures are given in terms of an edge direction (or `None` if
         there is no direction) and edge data.
@@ -4596,11 +5480,12 @@ class Graph:
         Examples
         --------
         >>> from symbolica import *
-        >>> g, q, gh = S('g', 'q', 'gh')
-        >>> gp, qp, qbp, ghp, ghbp = (None, g), (True, q), (False, q), (True, gh), (False, gh)
-        >>> graphs = Graph.generate([(1, gp), (2, gp)],
-        >>>                         [[gp, gp, gp], [gp, gp, gp, gp],
-        >>>                         [qp, qbp, gp], [ghp, ghbp, gp]], max_loops=2)
+        >>> g, q = HalfEdge(S("g")), HalfEdge(S("q"), True)
+        >>> graphs = Graph.generate(
+        >>>     [(1, g), (2, g)],
+        >>>     [[g, g, g], [g, g, g, g], [q.flip(), q, g]],
+        >>>     max_loops=2,
+        >>> )
         >>> for (g, sym) in graphs.items():
         >>>     print(f'Symmetry factor = 1/{sym}:')
         >>>     print(g.to_dot())
@@ -4609,10 +5494,10 @@ class Graph:
 
         Parameters
         ----------
-        external_nodes: Sequence[tuple[Expression | int, Tuple[Optional[bool], Expression | int]]]
+        external_nodes: Sequence[tuple[Expression | int, HalfEdge]]
             The external edges, consisting of a tuple of the node data and a tuple of the edge direction and edge data.
             If the node data is the same, flip symmetries will be recognized.
-        vertex_signatures: Sequence[Sequence[Tuple[Optional[bool], Expression | int]]]
+        vertex_signatures: Sequence[Sequence[HalfEdge]]
             The allowed connections for each vertex.
         max_vertices: int, optional
             The maximum number of vertices in the graph.
@@ -4630,6 +5515,11 @@ class Graph:
             that specifies that the first `n` vertices are completed (no new edges will) be
             assigned to them. The filter function should return `true` if the current
             incomplete graph is allowed, else it should return `false` and the graph is discarded.
+        progress_fn: Optional[Callable[[Graph], bool]], optional
+            Set a progress function that is called every time a new unique graph is created.
+            The argument is the currently generated graph.
+            If the function returns `false`, the generation is aborted and the currently
+            generated graphs are returned.
         """
 
     def to_dot(self) -> str:
