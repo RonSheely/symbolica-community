@@ -9,7 +9,7 @@ name = "symbolica_community"
 readme = "Readme.md"
 repository = "https://github.com/benruijl/symbolica-community"
 rust-version = "1.88"
-version = "1.0.0"
+version = "1.0.1"
 
 
 [[bin]]
@@ -39,15 +39,15 @@ pyo3-stub-gen = { version = "0.16", optional = true, default-features = false, f
     "numpy",
 ] }
 spynso3 = { version = "0.1" }
-vakint = { git = "https://github.com/alphal00p/vakint", rev = "a32723f7c56ce73dd6a35713880e3a924e72c51b", features = [
+vakint = { git = "https://github.com/alphal00p/vakint", rev = "4d61a5d60e5490d19856c8db552384d8a9422e40", features = [
     "symbolica_community_module",
 ] }
 
 [patch.crates-io]
-spynso3 = { git = "https://github.com/alphal00p/spenso", rev = "906b4653e4c35d6083ddf0bd1c9585bdfdd7b681" }
-idenso = { git = "https://github.com/alphal00p/spenso", rev = "906b4653e4c35d6083ddf0bd1c9585bdfdd7b681" }
-spenso = { git = "https://github.com/alphal00p/spenso", rev = "906b4653e4c35d6083ddf0bd1c9585bdfdd7b681" }
-spenso-hep-lib = { git = "https://github.com/alphal00p/spenso", rev = "906b4653e4c35d6083ddf0bd1c9585bdfdd7b681" }
+spynso3 = { git = "https://github.com/alphal00p/spenso", rev = "4b2c54701bac02259f1d97fb200e1a7cba2b9e9c" }
+idenso = { git = "https://github.com/alphal00p/spenso", rev = "4b2c54701bac02259f1d97fb200e1a7cba2b9e9c" }
+spenso = { git = "https://github.com/alphal00p/spenso", rev = "4b2c54701bac02259f1d97fb200e1a7cba2b9e9c" }
+spenso-hep-lib = { git = "https://github.com/alphal00p/spenso", rev = "4b2c54701bac02259f1d97fb200e1a7cba2b9e9c" }
 #pyo3-stub-gen = { git = "https://github.com/Jij-Inc/pyo3-stub-gen", rev = "b13f213a748ee09bf22073e0e4d82cb09d797a5c", optional = true, default-features = false, features = [
 #    "numpy",
 #] }
