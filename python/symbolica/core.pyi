@@ -40,7 +40,13 @@ def is_licensed() -> bool:
 
 
 def set_license_key(key: str) -> None:
-    """Set the Symbolica license key for this computer. Can only be called before calling any other Symbolica functions."""
+    """This function is deprecated and no longer sets the license key.
+    You can set the license key through the environment variable `SYMBOLICA_LICENSE` before importing Symbolica:
+
+    >>> import os  # noqa: E402
+    >>> os.environ['SYMBOLICA_LICENSE'] = 'YOURKEY'  # noqa: E402
+    >>> from symbolica import *
+    """
 
 
 def request_hobbyist_license(name: str, email: str) -> None:
@@ -5315,9 +5321,13 @@ class NumericalIntegrator:
 
     def export_grid(
         self,
+        export_samples: bool = True,
     ) -> bytes:
         """Export the grid, so that it can be sent to another thread or machine.
-        Use `import_grid` to load the grid."""
+        If you are exporting your main grid, make sure to set `export_samples` to `False` to avoid copying unprocessed samples.
+
+        Use `import_grid` to load the grid.        
+        """
 
     def get_live_estimate(
         self,
